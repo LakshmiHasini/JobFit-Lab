@@ -58,15 +58,13 @@ export function interviewRoutes(store: Store, githubAnalyzer = analyzeGithub) {
       await store.replace('profiles', existing);
       res.json(existing);
     } else
-      res
-        .status(201)
-        .json(
-          await store.insert('profiles', {
-            ...input,
-            ownerId: req.session.userId!,
-            repositories: [],
-          }),
-        );
+      res.status(201).json(
+        await store.insert('profiles', {
+          ...input,
+          ownerId: req.session.userId!,
+          repositories: [],
+        }),
+      );
   });
   router.post(
     '/github/import',
