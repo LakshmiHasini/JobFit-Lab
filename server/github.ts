@@ -10,10 +10,22 @@ type Repo = {
   archived: boolean;
 };
 export function githubUsername(input: string) {
-  const value = input
-    .trim()
-    .replace(/^https?:\/\/(www\.)?github\.com\//i, '')
-    .replace(/\/$/, '');
+  let value = input.trim();
+  if (/^(?:www\.)?github\.com\//i.test(value)) value = 'https://' + value;
+  if (/^https?:\/\//i.test(value)) {
+    let url: URL;
+    try {
+      url = new URL(value);
+    } catch {
+      throw Object.assign(new Error('Enter a valid GitHub profile link.'), { status: 400 });
+    }
+    if (!['github.com', 'www.github.com'].includes(url.hostname) || url.username || url.password)
+      throw Object.assign(new Error('Use a github.com profile or repository link.'), {
+        status: 400,
+      });
+    // Profile tabs/fragments and repository links all identify the same account owner.
+    value = url.pathname.split('/').filter(Boolean)[0] ?? '';
+  } else value = value.replace(/^@/, '').replace(/\/$/, '');
   if (!/^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(value) || value.includes('--'))
     throw Object.assign(
       new Error('Enter a GitHub username or profile URL, without a repository path.'),

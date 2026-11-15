@@ -210,7 +210,7 @@ function App() {
             <div className="demo-banner">
               <FlaskConical size={15} />
               <span>
-                Local demo · Sample content is editable. All records reset when the API restarts.
+                Local development · Your saved accounts and profiles stay on this computer.
               </span>
             </div>
           )}
@@ -226,7 +226,14 @@ function App() {
               </button>
             </div>
           )}
-          {page === 'studio' && <InterviewStudio name={user.name} onImported={refresh} />}
+          {page === 'studio' && (
+            <InterviewStudio
+              name={user.name}
+              userId={user.id}
+              onAuthenticated={authenticated}
+              onImported={refresh}
+            />
+          )}
           {page === 'overview' && (
             <>
               <div className="page-heading">

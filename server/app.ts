@@ -74,7 +74,7 @@ export function createApp(options: {
     }),
   );
   app.get('/api/health', (_req, res) =>
-    res.json({ status: 'ok', storage: demo ? 'ephemeral-demo' : 'mongodb' }),
+    res.json({ status: 'ok', storage: demo ? 'local-development' : 'mongodb' }),
   );
   app.get('/api/session', async (req, res) => {
     const user = req.session.userId

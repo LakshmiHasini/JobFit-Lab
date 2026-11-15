@@ -40,7 +40,8 @@ async function request<T>(path: string, body?: unknown, method = 'POST'): Promis
   const data = await response
     .json()
     .catch(() => ({ error: 'The service is unavailable. Please try again.' }));
-  if (!response.ok) throw new Error(data.error ?? 'Request failed');
+  if (!response.ok)
+    throw Object.assign(new Error(data.error ?? 'Request failed'), { status: response.status });
   return data;
 }
 const initial = (name: string): CareerProfile => ({
@@ -67,11 +68,24 @@ const initial = (name: string): CareerProfile => ({
 export function InterviewStudio({
   name,
   onImported,
+  userId,
+  onAuthenticated,
 }: {
   name: string;
   onImported: () => Promise<void>;
+  userId: string;
+  onAuthenticated: (person: { id: string; name: string; email: string }) => Promise<void>;
 }) {
-  const [profile, setProfile] = useState<CareerProfile>(initial(name));
+  const draftKey = 'jobfit-profile-draft:' + userId;
+  const [profile, setProfile] = useState<CareerProfile>(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem(draftKey) || 'null') || initial(name);
+    } catch {
+      return initial(name);
+    }
+  });
+  const [authRequired, setAuthRequired] = useState(false);
+  const [createAccount, setCreateAccount] = useState(false);
   const [sessions, setSessions] = useState<SafePrep[]>([]);
   const [selected, setSelected] = useState('');
   const [tab, setTab] = useState('profile');
@@ -91,10 +105,16 @@ export function InterviewStudio({
       request<SafePrep[]>('/preparations'),
     ])
       .then(([p, s]) => {
-        if (p.profile) setProfile(p.profile);
+        if (sessionStorage.getItem(draftKey)) {
+          setDirty(true);
+          setNotice('Restored your unsaved profile draft from this tab.');
+        } else if (p.profile) setProfile(p.profile);
         setSessions(s.reverse());
       })
-      .catch((e) => setError(e.message))
+      .catch((e) => {
+        setError(e.message);
+        if (e.status === 401) setAuthRequired(true);
+      })
       .finally(() => setReady(true));
   }, []);
   useEffect(() => {
@@ -103,6 +123,15 @@ export function InterviewStudio({
     setResult(null);
     setPracticeNotes({});
   }, [active?.id]);
+  useEffect(() => {
+    if (ready && dirty) {
+      try {
+        sessionStorage.setItem(draftKey, JSON.stringify(profile));
+      } catch {
+        /* Keep the current form if browser storage is unavailable. */
+      }
+    }
+  }, [profile, dirty, ready, draftKey]);
   async function run(label: string, fn: () => Promise<void>) {
     setBusy(label);
     setError('');
@@ -111,6 +140,7 @@ export function InterviewStudio({
       await fn();
     } catch (e) {
       setError((e as Error).message);
+      if ((e as Error & { status?: number }).status === 401) setAuthRequired(true);
     } finally {
       setBusy('');
     }
@@ -125,7 +155,26 @@ export function InterviewStudio({
       const saved = await request<CareerProfile>('/profile', profile, 'PUT');
       setProfile(saved);
       setDirty(false);
+      sessionStorage.removeItem(draftKey);
       setNotice('Profile saved. Import your GitHub projects to continue.');
+    });
+  }
+  async function recoverSession(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const values = Object.fromEntries(new FormData(e.currentTarget));
+    await run('Restoring sign-in and saving profile', async () => {
+      const person = await request<{ id: string; name: string; email: string }>(
+        createAccount ? '/auth/register' : '/auth/login',
+        { ...values, ...(createAccount ? { name: profile.fullName } : {}) },
+      );
+      await onAuthenticated(person);
+      setAuthRequired(false);
+      const saved = await request<CareerProfile>('/profile', profile, 'PUT');
+      setProfile(saved);
+      setDirty(false);
+      sessionStorage.removeItem(draftKey);
+      sessionStorage.removeItem('jobfit-profile-draft:' + person.id);
+      setNotice('Signed in and profile saved. Your form entries have been kept.');
     });
   }
   async function importProjects() {
@@ -233,6 +282,46 @@ export function InterviewStudio({
           </button>
         ))}
       </div>
+      {authRequired && (
+        <section className="studio-panel" aria-label="Restore sign-in">
+          <h2>Sign in to save your profile</h2>
+          <p>
+            Your session expired. Your draft stays on this page. If you used the earlier temporary
+            demo, you may need to create your account again.
+          </p>
+          <form onSubmit={recoverSession}>
+            <div className="form-grid">
+              <label>
+                Email address
+                <input name="email" type="email" required autoComplete="username" />
+              </label>
+              <label>
+                Password
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  minLength={createAccount ? 10 : 1}
+                  maxLength={128}
+                  autoComplete={createAccount ? 'new-password' : 'current-password'}
+                />
+              </label>
+            </div>
+            <div className="studio-actions">
+              <button className="button primary" disabled={Boolean(busy)}>
+                {createAccount ? 'Create account and save profile' : 'Sign in and save profile'}
+              </button>
+              <button
+                className="text-button"
+                type="button"
+                onClick={() => setCreateAccount((v) => !v)}
+              >
+                {createAccount ? 'Use an existing account' : 'Create an account instead'}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
       {error && (
         <div className="error" role="alert">
           {error}

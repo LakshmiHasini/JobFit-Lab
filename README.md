@@ -27,7 +27,7 @@ npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173** and select **Open demo workspace**. Each demo session gets an isolated sample workspace. The demo stores records in API memory; restarting the API clears them. Do not use real personal data in the demo. No AI API key is required.
+Open **http://127.0.0.1:5173** and select **Open demo workspace**. Each demo session gets an isolated sample workspace. Local development stores records and sessions in the private, git-ignored `.data/workspace.json` file so they survive API restarts. The directory is private to the local OS account and denied by the Vite server. Production still requires MongoDB. Do not use real personal data in the demo. No AI API key is required.
 
 ## MongoDB mode
 
@@ -38,7 +38,7 @@ For a local MongoDB instance, use `mongodb://127.0.0.1:27017/jobfit-lab`; a reac
 ## Current working slice
 
 - Email/password registration, login, logout, hashed passwords, cookie sessions.
-- Isolated demo workspaces, explicitly labeled as temporary.
+- Isolated demo workspaces with local development persistence.
 - Create projects and attach skill-specific evidence and supporting links.
 - Paste a job description and inspect proposed requirements with exact excerpts.
 - Explicitly confirm requirements, choose their importance, and attach matching evidence.
@@ -100,8 +100,12 @@ Each feature branch is merged into main with a merge commit to preserve its scop
 
 Automated API tests use the memory adapter, not a live MongoDB instance. MongoDB connection, persistent sessions, and deployment behavior require separate integration verification before production. Email verification, password reset, account deletion/export, comprehensive concurrency handling, and assessment history are not yet implemented.
 
-Verified locally: strict TypeScript check, production frontend build, and all 15 domain/API tests passed. Tests cover profile isolation, safe GitHub handles, source-linked analysis, idempotent imports, time budgets, original-resume preservation, and server-side quiz answers/grading. A live API walkthrough imported one public repository with seven signals, generated a seven-day plan, and graded five questions. The initial browser walkthrough covered evidence linking and task completion; the updated profile UI was inspected without changing the user's in-progress form. PDF extraction and the browser print dialog still need a dedicated file/print walkthrough.
+Verified locally: strict TypeScript check, production frontend build, and all 16 domain/API tests passed. Tests cover profile isolation, safe GitHub handles, source-linked analysis, idempotent imports, time budgets, original-resume preservation, and server-side quiz answers/grading. A live API walkthrough imported one public repository with seven signals, generated a seven-day plan, and graded five questions. The initial browser walkthrough covered evidence linking and task completion; the updated profile UI was inspected without changing the user's in-progress form. PDF extraction and the browser print dialog still need a dedicated file/print walkthrough.
 
 ## GitHub Actions setup
 
 The current GitHub login does not have the `workflow` OAuth scope. To allow the application and all component branches to be pushed now, the CI definition is stored in `docs/github-actions-template.yml` rather than `.github/workflows/`. **No GitHub Actions checks are active yet.** After explicitly authorizing workflow access, copy that template to `.github/workflows/ci.yml` and push it. Local build and test commands work independently of GitHub Actions.
+
+## Profile-save recovery
+
+Expired sign-in now offers inline reauthentication without discarding profile fields. Unsaved profile drafts are kept in tab-scoped session storage, keyed by account. Local development persists account password hashes, sessions, profiles, and preparation data in a private `.data/` directory; never commit or publicly serve it. The local JSON adapter supports one API process and is not a replacement for MongoDB in production. GitHub inputs accept handles, @handles, profile/repository URLs, and links without a URL scheme. A regression test reinitializes local storage and verifies both profile persistence and session-cookie continuity.
