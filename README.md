@@ -50,7 +50,8 @@ npm start        # API; in production also serves the built frontend
 src/             React application and responsive styles
 server/          Express routes, authentication, MongoDB/demo storage
 shared/          Domain types, skill dictionary, extraction and coverage rules
-.github/         CI and contribution templates
+.github/         Pull request template
+docs/            GitHub Actions template (not active)
 PLAN.md          Phases, acceptance criteria, estimates, remaining scope
 ```
 
@@ -73,7 +74,8 @@ Set MongoDB mode as above, set `APP_ORIGIN` to the deployed origin, then build a
 - `feature/backend`: Server bootstrap and MongoDB/demo storage adapters.
 - `feature/api`: Express routes, accounts, sessions, input validation, and API integration tests.
 - `feature/frontend`: React views, forms, styles, and API client.
-- `docs/project-plan`: phased plan, documentation, and CI.
+- `docs/project-plan`: phased plan and documentation.
+- `docs/ci-setup`: inactive CI template and setup instructions.
 - `chore/code-formatting`: shared formatting configuration and readable source formatting.
 
 Each feature branch is merged into main with a merge commit to preserve its scope. The API depends on backend storage and shared domain contracts; the frontend uses the integrated API. Future changes should use pull requests and pass the CI workflow before merging.
@@ -83,3 +85,7 @@ Each feature branch is merged into main with a merge commit to preserve its scop
 Automated API tests use the memory adapter, not a live MongoDB instance. MongoDB connection, persistent sessions, and deployment behavior require separate integration verification before production. Email verification, password reset, account deletion/export, comprehensive concurrency handling, and assessment history are not yet implemented.
 
 Verified locally: strict TypeScript check, production frontend build, and all 9 domain/API tests passed. Browser walkthrough verified opening an isolated demo, explicitly confirming requirements, linking matching evidence, creating a preparation task, completing it, and checking that evidence coverage did not increase from task completion.
+
+## GitHub Actions setup
+
+The current GitHub login does not have the `workflow` OAuth scope. To allow the application and all component branches to be pushed now, the CI definition is stored in `docs/github-actions-template.yml` rather than `.github/workflows/`. **No GitHub Actions checks are active yet.** After explicitly authorizing workflow access, copy that template to `.github/workflows/ci.yml` and push it. Local build and test commands work independently of GitHub Actions.
