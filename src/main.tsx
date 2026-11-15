@@ -31,9 +31,10 @@ import {
   type Workspace,
 } from '../shared/domain';
 import './styles.css';
+import { InterviewStudio } from './InterviewStudio';
 
 type Person = { id: string; name: string; email: string };
-type Page = 'overview' | 'projects' | 'roles' | 'plan';
+type Page = 'studio' | 'overview' | 'projects' | 'roles' | 'plan';
 type ModalState =
   | { type: 'project' }
   | { type: 'evidence'; projectId: string }
@@ -56,7 +57,7 @@ function App() {
   const [demo, setDemo] = useState(false);
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<Workspace>(empty);
-  const [page, setPage] = useState<Page>('overview');
+  const [page, setPage] = useState<Page>('studio');
   const [selectedRole, setSelectedRole] = useState('');
   const [modal, setModal] = useState<ModalState | null>(null);
   const [error, setError] = useState('');
@@ -111,6 +112,7 @@ function App() {
     );
   if (!user) return <Auth demo={demo} onAuthenticated={authenticated} initialError={error} />;
   const pages: { id: Page; label: string; icon: typeof Target }[] = [
+    { id: 'studio', label: 'Interview studio', icon: Sparkles },
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'projects', label: 'Project evidence', icon: FolderOpen },
     { id: 'roles', label: 'Target roles', icon: Target },
@@ -224,6 +226,7 @@ function App() {
               </button>
             </div>
           )}
+          {page === 'studio' && <InterviewStudio name={user.name} onImported={refresh} />}
           {page === 'overview' && (
             <>
               <div className="page-heading">

@@ -2,6 +2,22 @@
 
 A MERN career preparation workspace connecting job requirements to user-provided project evidence and practical preparation tasks. Evidence coverage is not a proficiency certification, hiring prediction, or ATS score.
 
+## Interview studio: profile-first workflow
+
+The default workspace now starts with **Complete profile → Preparation plan → Tailor resume → Interview practice**.
+
+- Save your GitHub handle, LinkedIn, LeetCode, and GeeksforGeeks profile links, experience level, background, and self-reported coding-practice context.
+- Upload a text-based PDF/TXT/Markdown resume, or paste resume text. PDF extraction happens in the browser; review extracted text before saving. Files are limited to 5 MB and PDFs to 15 pages. Scanned PDFs need pasted text; OCR and DOCX import are not implemented.
+- Set the target role, paste a job description, and choose 1–60 days and 1–8 preparation hours per day.
+- Save the profile, then import the latest five eligible public GitHub repositories. The importer searches the latest 100 user-owned public repositories, excludes forks/archived repositories, and inspects up to two package manifests per analyzed repository plus file-tree/language signals. It does not execute code or certify personal contribution.
+- Generate a saved preparation snapshot with daily time budgets, gap-first topics, project deep-dive prompts, and behavioral interview guidance.
+- Review an editable resume draft alongside the original. Current tailoring reorders relevant contiguous bullet lists while preserving all original lines and chronology; it does not perform AI rewriting or invent achievements. Save/export TXT or print to PDF (text layout, not the original PDF formatting).
+- Practice role-selected curated quizzes with server-side grading, explanations, and attempt history, plus coding exercises, project questions, and downloadable answer notes. Coding solutions are not executed or automatically graded. Draft mock-interview/coding notes are temporary unless downloaded.
+
+LinkedIn, LeetCode, and GFG are stored links, not live imports. No AI provider is connected. The mapping currently supports 12 technical skills, so plans are a starting point to compare with the complete job description. Social profiles, resumes, and preparation sessions are scoped to the signed-in account; no resume is sent to GitHub or an AI provider.
+
+Public GitHub API access works without a token but is rate-limited. Optionally set `GITHUB_TOKEN` on the server to increase the public-data request budget. Never expose it through frontend environment variables. Missing manifests, truncated trees, and per-repository failures are reported as analysis warnings. Re-imports reuse existing projects/evidence rather than duplicating the same source signals.
+
 ## Run locally
 
 Requires Node.js 22+ and npm.
@@ -32,7 +48,7 @@ For a local MongoDB instance, use `mongodb://127.0.0.1:27017/jobfit-lab`; a reac
 
 ## Phases and remaining work
 
-See [PLAN.md](PLAN.md). Foundation and the accounts/evidence slice are implemented, together with a basic vertical slice of role review and preparation tasks. Phase 3 is **not complete**: manual requirement editing, versioned immutable assessments, and more nuanced extraction remain. Phase 4 still needs priorities, dates, and task editing/deletion. Production release and optional AI/PDF features remain later phases.
+See [PLAN.md](PLAN.md). The initial accounts/evidence slice and the profile-first interview studio are implemented. Manual requirement editing, immutable assessment revisions, preparation-task priorities/dates/editing, live MongoDB verification, and production release remain. AI rewriting, private GitHub access, and live coding-platform integrations are not implemented.
 
 The current curated dictionary recognizes 12 skills. It proposes keyword mentions, not semantic qualification decisions. For example, React Native may produce a React proposal that needs user rejection; the system never auto-confirms it. Description text is not edited in place in this version, preserving the original role input until assessment revision support is built.
 
@@ -84,7 +100,7 @@ Each feature branch is merged into main with a merge commit to preserve its scop
 
 Automated API tests use the memory adapter, not a live MongoDB instance. MongoDB connection, persistent sessions, and deployment behavior require separate integration verification before production. Email verification, password reset, account deletion/export, comprehensive concurrency handling, and assessment history are not yet implemented.
 
-Verified locally: strict TypeScript check, production frontend build, and all 9 domain/API tests passed. Browser walkthrough verified opening an isolated demo, explicitly confirming requirements, linking matching evidence, creating a preparation task, completing it, and checking that evidence coverage did not increase from task completion.
+Verified locally: strict TypeScript check, production frontend build, and all 15 domain/API tests passed. Tests cover profile isolation, safe GitHub handles, source-linked analysis, idempotent imports, time budgets, original-resume preservation, and server-side quiz answers/grading. A live API walkthrough imported one public repository with seven signals, generated a seven-day plan, and graded five questions. The initial browser walkthrough covered evidence linking and task completion; the updated profile UI was inspected without changing the user's in-progress form. PDF extraction and the browser print dialog still need a dedicated file/print walkthrough.
 
 ## GitHub Actions setup
 

@@ -6,6 +6,8 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import type { Store } from './store.js';
 import { extractRequirements, skills } from '../shared/domain.js';
+import { interviewRoutes } from './interview.js';
+import { analyzeGithub } from './github.js';
 
 declare module 'express-session' {
   interface SessionData {
@@ -37,6 +39,7 @@ export function createApp(options: {
   sessionStore?: session.Store;
   origin?: string;
   production?: boolean;
+  githubAnalyzer?: typeof analyzeGithub;
 }) {
   const { store, demo } = options;
   const app = express();
@@ -196,6 +199,7 @@ export function createApp(options: {
     ]);
     res.json({ projects, evidence, roles, tasks });
   });
+  app.use('/api', interviewRoutes(store, options.githubAnalyzer));
   app.post('/api/projects', async (req, res) => {
     const input = z
       .object({ title: text.max(100), description: text, repository: link.default('') })

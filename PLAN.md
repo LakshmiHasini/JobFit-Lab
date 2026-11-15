@@ -2,7 +2,20 @@
 
 ## Goal
 
-Connect user-confirmed job requirements to user-provided project evidence, then turn uncovered requirements into preparation tasks. Coverage is not a hiring prediction or an ATS score.
+Build a profile-first interview preparation workspace: professional/coding profiles, current resume, GitHub project signals, a target job, a budgeted preparation plan, resume tailoring, quizzes, and interview guidance. Coverage is not a hiring prediction or an ATS score.
+
+## Scope revision — interview studio
+
+The user expanded the original evidence tracker into an end-to-end interview preparation product. The sections below retain the original delivery history; the new primary workflow is:
+
+1. **Complete profile — implemented:** GitHub, LinkedIn, LeetCode, GFG, resume PDF/text input, background, experience, role/JD, and preparation time.
+2. **Analyze GitHub — implemented baseline:** latest five eligible public repositories, linked manifest/tree/language signals, repeat-import deduplication, and warnings. Deep code understanding, contribution attribution, private repos, and exhaustive repository analysis remain.
+3. **Generate preparation — implemented baseline:** saved input snapshots, role-topic mapping, gap-first daily activities, strict daily time budgets, and downloadable plans. The current mapping is a curated set of 12 skills, not semantic full-JD understanding.
+4. **Tailor resume — implemented baseline:** original preserved, relevant contiguous bullets reprioritized, editable/saved draft, TXT export, and browser print/PDF. Semantic AI rewriting, template-preserving document export, and OCR remain.
+5. **Practice interviews — implemented baseline:** curated role-topic quizzes, private answer keys, graded explanations, attempt history, coding exercises, behavioral prompts, project deep dives, and downloadable notes. Live coding execution, AI answer feedback, and voice mocks remain.
+6. **Production and advanced integrations — pending:** MongoDB integration verification, full browser/PDF/export QA, account recovery, durable production hosting, explicitly authorized AI-provider configuration, and supported LinkedIn/coding-platform integrations.
+
+LinkedIn, LeetCode, and GFG links and statistics are not scraped. Coding context is explicitly self-reported. No AI provider is connected; resumes are not sent to an external AI service. Current development still uses explicitly temporary demo storage.
 
 ## Phase 1 — Foundation and local preview
 
@@ -38,8 +51,8 @@ Connect user-confirmed job requirements to user-provided project evidence, then 
 
 ## Phase 6 — Optional enhancements
 
-- PDF resume import with user review, optional AI proposals with source excerpts, GitHub integration, email reminders.
-- These are outside the first release. Never infer proficiency merely from a repository URL.
+- GitHub public imports and text-based PDF input moved into the core studio scope above.
+- Optional AI proposals/rewriting, supported additional platform integrations, and email reminders remain future work. Never infer proficiency merely from a repository URL.
 
 ## Planning estimates
 

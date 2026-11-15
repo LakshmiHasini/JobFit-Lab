@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import type { User, Project, Evidence, Role, Task } from '../shared/domain.js';
+import type { CareerProfile, PrepSession } from '../shared/preparation.js';
 
 export type Records = {
   users: User;
@@ -8,6 +9,8 @@ export type Records = {
   evidence: Evidence;
   roles: Role;
   tasks: Task;
+  profiles: CareerProfile;
+  preparations: PrepSession;
 };
 export interface Store {
   list<K extends keyof Records>(kind: K, filter: Partial<Records[K]>): Promise<Records[K][]>;
@@ -99,6 +102,38 @@ export async function mongoStore(uri: string): Promise<Store> {
       title: String,
       criteria: String,
       done: Boolean,
+    }),
+    profiles: new mongoose.Schema({
+      ...owned,
+      ownerId: { type: String, required: true, unique: true },
+      fullName: String,
+      headline: String,
+      github: String,
+      linkedin: String,
+      leetcode: String,
+      gfg: String,
+      experience: String,
+      background: String,
+      codingContext: String,
+      resume: String,
+      targetRole: String,
+      jobDescription: String,
+      days: Number,
+      hoursPerDay: Number,
+      repositories: [mongoose.Schema.Types.Mixed],
+    }),
+    preparations: new mongoose.Schema({
+      ...owned,
+      role: String,
+      jobDescription: String,
+      profileSnapshot: mongoose.Schema.Types.Mixed,
+      repositories: [mongoose.Schema.Types.Mixed],
+      plan: [mongoose.Schema.Types.Mixed],
+      originalResume: String,
+      draftResume: String,
+      questions: [mongoose.Schema.Types.Mixed],
+      interviewPrompts: [String],
+      attempts: [mongoose.Schema.Types.Mixed],
     }),
   };
   const models = Object.fromEntries(
