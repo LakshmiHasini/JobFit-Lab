@@ -3,6 +3,9 @@ import { analyzeGithub, githubUsername } from './github';
 describe('GitHub source analysis', () => {
   it('accepts profile handles and rejects arbitrary URL fetch targets', () => {
     expect(githubUsername('https://github.com/sample-user/')).toBe('sample-user');
+    expect(githubUsername('github.com/sample-user?tab=repositories')).toBe('sample-user');
+    expect(githubUsername('https://github.com/sample-user/project/tree/main')).toBe('sample-user');
+    expect(githubUsername('@sample-user')).toBe('sample-user');
     expect(() => githubUsername('http://127.0.0.1/internal')).toThrow();
     expect(() => githubUsername('sample/repo')).toThrow();
   });

@@ -4,7 +4,8 @@ import { randomBytes } from 'node:crypto';
 import express from 'express';
 import path from 'node:path';
 import { createApp } from './app.js';
-import { memoryStore, mongoStore } from './store.js';
+import { mongoStore } from './store.js';
+import { localStorage } from './local.js';
 
 const demo = process.env.DEMO_MODE !== 'false';
 const production = process.env.NODE_ENV === 'production';
@@ -21,14 +22,17 @@ if (
   throw new Error(
     'MongoDB mode requires MONGODB_URI and a SESSION_SECRET of at least 32 characters.',
   );
-const store = demo ? memoryStore() : await mongoStore(process.env.MONGODB_URI!);
+const local = demo ? await localStorage(path.resolve('.data')) : null;
+const store = local ? local.store : await mongoStore(process.env.MONGODB_URI!);
 const app = createApp({
   store,
   demo,
   production,
   origin: process.env.APP_ORIGIN ?? 'http://127.0.0.1:5173',
-  secret: process.env.SESSION_SECRET || randomBytes(32).toString('hex'),
-  sessionStore: demo ? undefined : MongoStore.create({ mongoUrl: process.env.MONGODB_URI! }),
+  secret: process.env.SESSION_SECRET || local?.secret || randomBytes(32).toString('hex'),
+  sessionStore: local
+    ? local.sessionStore
+    : MongoStore.create({ mongoUrl: process.env.MONGODB_URI! }),
 });
 if (production) {
   app.use(express.static(path.resolve('dist')));
@@ -39,7 +43,7 @@ const server = app.listen(
   production ? '0.0.0.0' : '127.0.0.1',
   () =>
     console.log(
-      `JobFit API: http://127.0.0.1:${process.env.PORT ?? 3001} (${demo ? 'DEMO: memory resets on restart' : 'MongoDB'})`,
+      `JobFit API: http://127.0.0.1:${process.env.PORT ?? 3001} (${demo ? 'local development storage' : 'MongoDB'})`,
     ),
 );
 process.on('SIGTERM', () => server.close(() => process.exit(0)));

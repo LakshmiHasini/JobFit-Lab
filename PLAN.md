@@ -15,7 +15,7 @@ The user expanded the original evidence tracker into an end-to-end interview pre
 5. **Practice interviews — implemented baseline:** curated role-topic quizzes, private answer keys, graded explanations, attempt history, coding exercises, behavioral prompts, project deep dives, and downloadable notes. Live coding execution, AI answer feedback, and voice mocks remain.
 6. **Production and advanced integrations — pending:** MongoDB integration verification, full browser/PDF/export QA, account recovery, durable production hosting, explicitly authorized AI-provider configuration, and supported LinkedIn/coding-platform integrations.
 
-LinkedIn, LeetCode, and GFG links and statistics are not scraped. Coding context is explicitly self-reported. No AI provider is connected; resumes are not sent to an external AI service. Current development still uses explicitly temporary demo storage.
+LinkedIn, LeetCode, and GFG links and statistics are not scraped. Coding context is explicitly self-reported. No AI provider is connected; resumes are not sent to an external AI service. Current development uses private, git-ignored local file storage for accounts, sessions, profiles, and preparation data. MongoDB remains required for production.
 
 ## Phase 1 — Foundation and local preview
 
@@ -64,4 +64,4 @@ Public repository: https://github.com/LakshmiHasini/JobFit-Lab. Component branch
 
 ## Scope and verification tracking
 
-Update README after implementation with checks actually run, phase status, and remaining limitations. Demo data is held in API memory and resets on restart; MongoDB mode is required for persistent multiuser use. Do not deploy demo mode publicly.
+Update README after implementation with checks actually run, phase status, and remaining limitations. Development data and sessions survive restarts in private local storage; MongoDB mode is required for production multiuser use. Do not deploy demo mode publicly.
