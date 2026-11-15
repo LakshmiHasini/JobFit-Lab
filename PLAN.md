@@ -45,6 +45,10 @@ Connect user-confirmed job requirements to user-provided project evidence, then 
 
 One developer, AI assistance, 15 focused hours/week, basic React/JavaScript familiarity. MVP: 45–70 hours (3–5 weeks). Portfolio-ready total: 95–145 hours (7–10 weeks), including MVP, excluding optional features. These are estimates, not measured benchmarks.
 
+## GitHub delivery
+
+Public repository: https://github.com/LakshmiHasini/JobFit-Lab. Component branches are merged into main. CI remains a template in `docs/github-actions-template.yml` because the current GitHub login lacks workflow-upload permission. Enabling hosted CI is pending authorized workflow access.
+
 ## Scope and verification tracking
 
 Update README after implementation with checks actually run, phase status, and remaining limitations. Demo data is held in API memory and resets on restart; MongoDB mode is required for persistent multiuser use. Do not deploy demo mode publicly.
