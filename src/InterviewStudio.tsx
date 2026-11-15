@@ -15,6 +15,7 @@ import {
 import type { CareerProfile, PrepSession, Question } from '../shared/preparation';
 import { skillName } from '../shared/domain';
 import { codingExercises } from '../shared/preparation';
+import { ATSCheck } from './ATSCheck';
 
 type SafePrep = Omit<PrepSession, 'questions'> & {
   questions: Omit<Question, 'correct' | 'explanation'>[];
@@ -269,7 +270,8 @@ export function InterviewStudio({
           ['profile', '01', 'Complete profile'],
           ['plan', '02', 'Preparation plan'],
           ['resume', '03', 'Tailor resume'],
-          ['practice', '04', 'Interview practice'],
+          ['ats', '04', 'ATS check'],
+          ['practice', '05', 'Interview practice'],
         ].map(([id, n, label]) => (
           <button
             key={id}
@@ -338,6 +340,26 @@ export function InterviewStudio({
           <LoaderCircle className="spin" size={17} />
           {busy}…
         </div>
+      )}
+      {tab === 'ats' && (
+        <ATSCheck
+          resume={active ? draft : profile.resume}
+          jobDescription={active?.jobDescription ?? profile.jobDescription}
+          originalResume={active?.originalResume}
+          onApply={
+            active
+              ? async (text) => {
+                  const updated = await request<SafePrep>(
+                    `/preparations/${active.id}/resume`,
+                    { draftResume: text },
+                    'PATCH',
+                  );
+                  setSessions((list) => list.map((p) => (p.id === updated.id ? updated : p)));
+                  setDraft(text);
+                }
+              : undefined
+          }
+        />
       )}
       {tab === 'profile' && (
         <>
@@ -616,7 +638,7 @@ export function InterviewStudio({
           </section>
         </>
       )}
-      {tab !== 'profile' && !active && (
+      {tab !== 'profile' && tab !== 'ats' && !active && (
         <div className="empty-state">
           <Sparkles size={27} />
           <h2>Start with your complete profile.</h2>
@@ -630,7 +652,7 @@ export function InterviewStudio({
           </button>
         </div>
       )}
-      {tab !== 'profile' && active && (
+      {tab !== 'profile' && tab !== 'ats' && active && (
         <>
           <div className="prep-selector">
             <label>
@@ -715,6 +737,12 @@ export function InterviewStudio({
             <>
               <section className="studio-panel">
                 <h2>Tailor the emphasis. Preserve the facts.</h2>
+                <div className="studio-actions">
+                  <button className="button primary" onClick={() => setTab('ats')}>
+                    Check this resume for ATS
+                    <ArrowRight size={15} />
+                  </button>
+                </div>
                 <p>
                   This draft prioritizes relevant bullets within your existing bullet lists. It
                   preserves your original sections, experience, and claims. No employers,

@@ -4,7 +4,7 @@ A MERN career preparation workspace connecting job requirements to user-provided
 
 ## Interview studio: profile-first workflow
 
-The default workspace now starts with **Complete profile → Preparation plan → Tailor resume → Interview practice**.
+The default workspace now starts with **Complete profile → Preparation plan → Tailor resume → ATS check → Interview practice**.
 
 - Save your GitHub handle, LinkedIn, LeetCode, and GeeksforGeeks profile links, experience level, background, and self-reported coding-practice context.
 - Upload a text-based PDF/TXT/Markdown resume, or paste resume text. PDF extraction happens in the browser; review extracted text before saving. Files are limited to 5 MB and PDFs to 15 pages. Scanned PDFs need pasted text; OCR and DOCX import are not implemented.
@@ -100,7 +100,7 @@ Each feature branch is merged into main with a merge commit to preserve its scop
 
 Automated API tests use the memory adapter, not a live MongoDB instance. MongoDB connection, persistent sessions, and deployment behavior require separate integration verification before production. Email verification, password reset, account deletion/export, comprehensive concurrency handling, and assessment history are not yet implemented.
 
-Verified locally: strict TypeScript check, production frontend build, and all 16 domain/API tests passed. Tests cover profile isolation, safe GitHub handles, source-linked analysis, idempotent imports, time budgets, original-resume preservation, and server-side quiz answers/grading. A live API walkthrough imported one public repository with seven signals, generated a seven-day plan, and graded five questions. The initial browser walkthrough covered evidence linking and task completion; the updated profile UI was inspected without changing the user's in-progress form. PDF extraction and the browser print dialog still need a dedicated file/print walkthrough.
+Verified locally: strict TypeScript check, production frontend build, and all 21 domain/API tests passed. Tests cover profile isolation, safe GitHub handles, source-linked analysis, idempotent imports, time budgets, original-resume preservation, and server-side quiz answers/grading. A live API walkthrough imported one public repository with seven signals, generated a seven-day plan, and graded five questions. The initial browser walkthrough covered evidence linking and task completion; the updated profile UI was inspected without changing the user's in-progress form. PDF extraction and the browser print dialog still need a dedicated file/print walkthrough.
 
 ## GitHub Actions setup
 
@@ -109,3 +109,13 @@ The current GitHub login does not have the `workflow` OAuth scope. To allow the 
 ## Profile-save recovery
 
 Expired sign-in now offers inline reauthentication without discarding profile fields. Unsaved profile drafts are kept in tab-scoped session storage, keyed by account. Local development persists account password hashes, sessions, profiles, and preparation data in a private `.data/` directory; never commit or publicly serve it. The local JSON adapter supports one API process and is not a replacement for MongoDB in production. GitHub inputs accept handles, @handles, profile/repository URLs, and links without a URL scheme. A regression test reinitializes local storage and verifies both profile persistence and session-cookie continuity.
+
+## ATS-oriented resume checking
+
+The ATS check tab works from profile resume/JD text before GitHub import. With a preparation selected, it uses the current tailored draft and that preparation’s job-description snapshot and compares coverage with the original. Edit a separate working copy, rerun checks, download checked resume/report TXT files, and explicitly save checked text to a tailored draft without overwriting the original.
+
+The report shows matched unique recognized job terms divided by all unique recognized job terms, source excerpts, required/preferred/mentioned context, seven observable text/readability checks, and stale-result detection after edits. No recognized terms means no percentage. Repetition adds no credit. Alternatives listed together may appear as separate terms; review the excerpts. Dictionary coverage is limited.
+
+This is a local text check, not an employer ATS score, qualification assessment, or hiring prediction. It does not inspect document layout, columns, tables, headers/footers, graphics, reading order, or employer-specific rules. A manual layout checklist links to official Greenhouse parsing guidance. No resume is sent to an external scoring service. Only add missing terms when supported by actual experience.
+
+ATS verification: five regression tests cover alias matching, Java versus JavaScript, C++/C#, no-term handling, unique-term counts, source excerpts, section checks, and uninspected-layout limitations. The checker was also run in the browser against the saved resume/JD; findings and rerun controls rendered successfully. Exported reports are generated from the checked snapshot, so edits require rerunning the check.
