@@ -4,11 +4,23 @@ import { createApp } from './app';
 import { memoryStore } from './store';
 
 const origin = 'http://127.0.0.1:5173';
-const credentials = { name: 'Test User', email: 'test@example.com', password: 'a-long-test-password' };
-const setup = () => createApp({ store: memoryStore(), demo: true, secret: 'test-session-secret-at-least-32-characters', origin });
+const credentials = {
+  name: 'Test User',
+  email: 'test@example.com',
+  password: 'a-long-test-password',
+};
+const setup = () =>
+  createApp({
+    store: memoryStore(),
+    demo: true,
+    secret: 'test-session-secret-at-least-32-characters',
+    origin,
+  });
 describe('workspace API', () => {
   let app: ReturnType<typeof setup>;
-  beforeEach(() => { app = setup(); });
+  beforeEach(() => {
+    app = setup();
+  });
   it('protects workspace access and supports account lifecycle', async () => {
     await request(app).get('/api/workspace').expect(401);
     const agent = request.agent(app);
@@ -17,19 +29,51 @@ describe('workspace API', () => {
     expect((await agent.get('/api/session')).body.user.email).toBe(credentials.email);
     await agent.post('/api/auth/logout').send({}).expect(200);
     await agent.get('/api/workspace').expect(401);
-    await agent.post('/api/auth/login').send({ ...credentials, password: 'wrong' }).expect(401);
+    await agent
+      .post('/api/auth/login')
+      .send({ ...credentials, password: 'wrong' })
+      .expect(401);
     await agent.post('/api/auth/login').send(credentials).expect(200);
   });
   it('keeps users isolated and prevents cross-owner or wrong-skill evidence associations', async () => {
-    const a = request.agent(app), b = request.agent(app);
+    const a = request.agent(app),
+      b = request.agent(app);
     await a.post('/api/auth/register').send(credentials);
     await b.post('/api/auth/register').send({ ...credentials, email: 'other@example.com' });
-    const project = (await a.post('/api/projects').send({ title: 'Project', description: 'My project', repository: '' }).expect(201)).body;
-    const evidence = (await a.post('/api/evidence').send({ projectId: project.id, skillId: 'react', statement: 'Built a React form', url: '' }).expect(201)).body;
-    await b.post('/api/evidence').send({ projectId: project.id, skillId: 'react', statement: 'Not mine', url: '' }).expect(404);
-    const role = (await b.post('/api/roles').send({ title: 'Developer', company: 'Sample', description: 'Required: React and Node.js experience' }).expect(201)).body;
-    await b.patch(`/api/roles/${role.id}/requirements/${role.requirements[0].id}`).send({ confirmed: true, importance: 'required', evidenceIds: [evidence.id] }).expect(400);
-    await a.patch(`/api/roles/${role.id}/requirements/${role.requirements[0].id}`).send({ confirmed: true, importance: 'required', evidenceIds: [] }).expect(404);
+    const project = (
+      await a
+        .post('/api/projects')
+        .send({ title: 'Project', description: 'My project', repository: '' })
+        .expect(201)
+    ).body;
+    const evidence = (
+      await a
+        .post('/api/evidence')
+        .send({ projectId: project.id, skillId: 'react', statement: 'Built a React form', url: '' })
+        .expect(201)
+    ).body;
+    await b
+      .post('/api/evidence')
+      .send({ projectId: project.id, skillId: 'react', statement: 'Not mine', url: '' })
+      .expect(404);
+    const role = (
+      await b
+        .post('/api/roles')
+        .send({
+          title: 'Developer',
+          company: 'Sample',
+          description: 'Required: React and Node.js experience',
+        })
+        .expect(201)
+    ).body;
+    await b
+      .patch(`/api/roles/${role.id}/requirements/${role.requirements[0].id}`)
+      .send({ confirmed: true, importance: 'required', evidenceIds: [evidence.id] })
+      .expect(400);
+    await a
+      .patch(`/api/roles/${role.id}/requirements/${role.requirements[0].id}`)
+      .send({ confirmed: true, importance: 'required', evidenceIds: [] })
+      .expect(404);
     const workspace = (await b.get('/api/workspace')).body;
     expect(workspace.projects).toHaveLength(0);
     expect(workspace.evidence).toHaveLength(0);
@@ -38,10 +82,19 @@ describe('workspace API', () => {
     const agent = request.agent(app);
     await agent.post('/api/auth/demo').send({}).expect(200);
     const before = (await agent.get('/api/workspace')).body;
-    const role = before.roles[0], req = role.requirements[0];
-    const body = { roleId: role.id, requirementId: req.id, title: 'Build an example', criteria: 'A working example and tests' };
+    const role = before.roles[0],
+      req = role.requirements[0];
+    const body = {
+      roleId: role.id,
+      requirementId: req.id,
+      title: 'Build an example',
+      criteria: 'A working example and tests',
+    };
     await agent.post('/api/tasks').send(body).expect(400);
-    await agent.patch(`/api/roles/${role.id}/requirements/${req.id}`).send({ confirmed: true, importance: 'required', evidenceIds: [] }).expect(200);
+    await agent
+      .patch(`/api/roles/${role.id}/requirements/${req.id}`)
+      .send({ confirmed: true, importance: 'required', evidenceIds: [] })
+      .expect(200);
     const task = (await agent.post('/api/tasks').send(body).expect(201)).body;
     await agent.patch(`/api/tasks/${task.id}`).send({ done: true }).expect(200);
     const after = (await agent.get('/api/workspace')).body;
@@ -53,16 +106,32 @@ describe('workspace API', () => {
     const agent = request.agent(app);
     await agent.post('/api/auth/demo').send({});
     await agent.post('/api/projects').send({ title: ' ', description: 'text' }).expect(400);
-    await agent.post('/api/projects').send({ title: 'Project', description: 'text', repository: 'javascript:alert(1)' }).expect(400);
-    await agent.post('/api/projects').set('Origin', 'https://other.example').send({ title: 'Project', description: 'text' }).expect(403);
-    await agent.post('/api/projects').set('Origin', origin).send({ title: 'Project', description: 'text' }).expect(201);
+    await agent
+      .post('/api/projects')
+      .send({ title: 'Project', description: 'text', repository: 'javascript:alert(1)' })
+      .expect(400);
+    await agent
+      .post('/api/projects')
+      .set('Origin', 'https://other.example')
+      .send({ title: 'Project', description: 'text' })
+      .expect(403);
+    await agent
+      .post('/api/projects')
+      .set('Origin', origin)
+      .send({ title: 'Project', description: 'text' })
+      .expect(201);
   });
   it('isolates demo visitors and disables demo entry outside demo mode', async () => {
-    const a = request.agent(app), b = request.agent(app);
+    const a = request.agent(app),
+      b = request.agent(app);
     const first = await a.post('/api/auth/demo').send({});
     const second = await b.post('/api/auth/demo').send({});
     expect(first.body.id).not.toBe(second.body.id);
-    const prodLike = createApp({ store: memoryStore(), demo: false, secret: 'another-long-session-secret-value' });
+    const prodLike = createApp({
+      store: memoryStore(),
+      demo: false,
+      secret: 'another-long-session-secret-value',
+    });
     await request(prodLike).post('/api/auth/demo').send({}).expect(404);
   });
 });

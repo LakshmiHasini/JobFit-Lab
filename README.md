@@ -74,6 +74,7 @@ Set MongoDB mode as above, set `APP_ORIGIN` to the deployed origin, then build a
 - `feature/api`: Express routes, accounts, sessions, input validation, and API integration tests.
 - `feature/frontend`: React views, forms, styles, and API client.
 - `docs/project-plan`: phased plan, documentation, and CI.
+- `chore/code-formatting`: shared formatting configuration and readable source formatting.
 
 Each feature branch is merged into main with a merge commit to preserve its scope. The API depends on backend storage and shared domain contracts; the frontend uses the integrated API. Future changes should use pull requests and pass the CI workflow before merging.
 
