@@ -220,16 +220,14 @@ export function createApp(options: {
     const input = z
       .object({ title: text.max(100), company: text.max(100), description: text.min(20) })
       .parse(req.body);
-    res
-      .status(201)
-      .json(
-        await store.insert('roles', {
-          ...input,
-          ownerId: req.session.userId!,
-          version: 1,
-          requirements: extractRequirements(input.description),
-        }),
-      );
+    res.status(201).json(
+      await store.insert('roles', {
+        ...input,
+        ownerId: req.session.userId!,
+        version: 1,
+        requirements: extractRequirements(input.description),
+      }),
+    );
   });
   app.patch('/api/roles/:id/requirements/:requirementId', async (req, res) => {
     const input = z
@@ -289,16 +287,14 @@ export function createApp(options: {
       const error = err as { status?: number; code?: number; message?: string };
       const status = error.code === 11000 ? 409 : (error.status ?? 500);
       if (status >= 500) console.error(err);
-      res
-        .status(status)
-        .json({
-          error:
-            status === 409
-              ? 'This record already exists'
-              : status >= 500
-                ? 'Something went wrong. Please try again.'
-                : error.message,
-        });
+      res.status(status).json({
+        error:
+          status === 409
+            ? 'This record already exists'
+            : status >= 500
+              ? 'Something went wrong. Please try again.'
+              : error.message,
+      });
     },
   );
   return app;
