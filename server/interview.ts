@@ -6,6 +6,7 @@ import { analyzeGithub, githubUsername } from './github.js';
 import { buildPreparation, type PrepSession } from '../shared/preparation.js';
 import { skillName } from '../shared/domain.js';
 import { scoreResume } from '../shared/resume-score.js';
+import { resumeBuilderRoutes } from './resume-builder.js';
 
 const short = z.string().trim().max(200);
 const social = (host: string) =>
@@ -21,14 +22,18 @@ const social = (host: string) =>
 const profileSchema = z.object({
   fullName: short.min(1),
   headline: short,
-  github: z.string().min(1).max(100).transform(githubUsername),
+  github: z
+    .string()
+    .max(100)
+    .default('')
+    .transform((value) => (value ? githubUsername(value) : '')),
   linkedin: social('linkedin.com'),
   leetcode: social('leetcode.com'),
   gfg: social('geeksforgeeks.org'),
   experience: z.enum(['student', 'junior', 'experienced']),
   background: z.string().max(5000),
   codingContext: z.string().max(3000),
-  resume: z.string().min(20).max(30000),
+  resume: z.string().max(30000).default(''),
   targetRole: short.min(1),
   jobDescription: z.string().min(20).max(20000),
   days: z.number().int().min(1).max(60),
@@ -44,6 +49,7 @@ function fail(status: number, message: string): never {
 
 export function interviewRoutes(store: Store, githubAnalyzer = analyzeGithub) {
   const router = Router();
+  router.use(resumeBuilderRoutes(store));
   router.post('/resume-scans', async (req, res) => {
     const input = z
       .object({
@@ -118,6 +124,11 @@ export function interviewRoutes(store: Store, githubAnalyzer = analyzeGithub) {
       const ownerId = req.session.userId!;
       const profile = (await store.list('profiles', { ownerId }))[0];
       if (!profile) fail(400, 'Complete your profile first.');
+      if (!profile.github)
+        fail(
+          400,
+          'Add your GitHub handle before importing, or build a resume from manually entered projects.',
+        );
       const repositories = await githubAnalyzer(profile.github, count);
       if (!repositories.length)
         fail(422, 'No public, non-fork, non-archived repositories were found.');
@@ -167,8 +178,11 @@ export function interviewRoutes(store: Store, githubAnalyzer = analyzeGithub) {
   router.post('/preparations', async (req, res) => {
     const profile = (await store.list('profiles', { ownerId: req.session.userId! }))[0];
     if (!profile) fail(400, 'Complete your profile first.');
-    if (!profile.repositories.length)
-      fail(400, 'Import your GitHub repositories before generating a plan.');
+    if (profile.resume.trim().length < 20)
+      fail(
+        400,
+        'Build a new resume or upload your current resume before generating a preparation plan.',
+      );
     const generated = buildPreparation(profile, profile.repositories);
     const prep = await store.insert('preparations', {
       ownerId: req.session.userId!,

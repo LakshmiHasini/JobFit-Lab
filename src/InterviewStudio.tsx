@@ -17,6 +17,7 @@ import { skillName } from '../shared/domain';
 import { codingExercises } from '../shared/preparation';
 import { ATSCheck } from './ATSCheck';
 import { readResumeFile } from './lib/resume';
+import { ResumeBuilder } from './ResumeBuilder';
 
 type SafePrep = Omit<PrepSession, 'questions'> & {
   questions: Omit<Question, 'correct' | 'explanation'>[];
@@ -158,7 +159,7 @@ export function InterviewStudio({
       setProfile(saved);
       setDirty(false);
       sessionStorage.removeItem(draftKey);
-      setNotice('Profile saved. Import your GitHub projects to continue.');
+      setNotice('Profile saved. Build a new resume, or continue preparing with your current one.');
     });
   }
   async function recoverSession(e: FormEvent<HTMLFormElement>) {
@@ -238,10 +239,11 @@ export function InterviewStudio({
       <div className="studio-tabs" aria-label="Interview preparation sections">
         {[
           ['profile', '01', 'Complete profile'],
-          ['plan', '02', 'Preparation plan'],
-          ['resume', '03', 'Tailor resume'],
-          ['ats', '04', 'ATS check'],
-          ['practice', '05', 'Interview practice'],
+          ['builder', '02', 'Build new resume'],
+          ['plan', '03', 'Preparation plan'],
+          ['resume', '04', 'Tailor resume'],
+          ['ats', '05', 'ATS check'],
+          ['practice', '06', 'Interview practice'],
         ].map(([id, n, label]) => (
           <button
             key={id}
@@ -331,6 +333,17 @@ export function InterviewStudio({
           }
         />
       )}
+      {tab === 'builder' && (
+        <ResumeBuilder
+          userId={userId}
+          profile={profile}
+          onUse={(saved) => {
+            setProfile(saved);
+            setDirty(false);
+            sessionStorage.removeItem(draftKey);
+          }}
+        />
+      )}
       {tab === 'profile' && (
         <>
           <form onSubmit={save} className="profile-form">
@@ -377,7 +390,6 @@ export function InterviewStudio({
                 <label>
                   GitHub username or profile URL
                   <input
-                    required
                     placeholder="your-username or https://github.com/your-username"
                     value={profile.github}
                     onChange={(e) => update('github', e.target.value)}
@@ -441,10 +453,14 @@ export function InterviewStudio({
               <div className="studio-section-title">
                 <FileText size={20} />
                 <div>
-                  <h2>Your current resume</h2>
-                  <p>Keep your original. Review a separate tailored draft.</p>
+                  <h2>Your current resume (optional)</h2>
+                  <p>Upload one if you have it, or build a new resume from your projects.</p>
                 </div>
               </div>
+              <button className="button secondary" type="button" onClick={() => setTab('builder')}>
+                I need a new resume
+                <ArrowRight size={16} />
+              </button>
               <label className="resume-upload">
                 Upload PDF, TXT, or Markdown · up to 5 MB
                 <input
@@ -460,8 +476,6 @@ export function InterviewStudio({
               <label>
                 Resume text
                 <textarea
-                  required
-                  minLength={20}
                   maxLength={30000}
                   rows={10}
                   placeholder="Upload a resume or paste its text here. Check PDF extraction before saving."
@@ -550,7 +564,7 @@ export function InterviewStudio({
             <div className="studio-actions">
               <button
                 className="button secondary"
-                disabled={Boolean(busy) || dirty || !profile.id}
+                disabled={Boolean(busy) || dirty || !profile.id || !profile.github}
                 onClick={() => void importProjects()}
               >
                 <Github size={16} />
@@ -560,7 +574,7 @@ export function InterviewStudio({
               </button>
               <button
                 className="button primary"
-                disabled={Boolean(busy) || dirty || !profile.repositories.length}
+                disabled={Boolean(busy) || dirty || profile.resume.trim().length < 20}
                 onClick={() => void generate()}
               >
                 Build my preparation workspace
@@ -608,13 +622,13 @@ export function InterviewStudio({
           </section>
         </>
       )}
-      {tab !== 'profile' && tab !== 'ats' && !active && (
+      {tab !== 'profile' && tab !== 'ats' && tab !== 'builder' && !active && (
         <div className="empty-state">
           <Sparkles size={27} />
           <h2>Start with your complete profile.</h2>
           <p>
-            Add your links, current resume, target role, and timeline. Import your projects, then
-            generate a preparation workspace.
+            Add your target role and timeline. Build a resume or upload one, then generate a
+            preparation workspace.
           </p>
           <button className="button primary" onClick={() => setTab('profile')}>
             Complete my profile
@@ -622,7 +636,7 @@ export function InterviewStudio({
           </button>
         </div>
       )}
-      {tab !== 'profile' && tab !== 'ats' && active && (
+      {tab !== 'profile' && tab !== 'ats' && tab !== 'builder' && active && (
         <>
           <div className="prep-selector">
             <label>

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { User, Project, Evidence, Role, Task } from '../shared/domain.js';
 import type { CareerProfile, PrepSession } from '../shared/preparation.js';
 import type { ResumeScan } from '../shared/resume-score.js';
+import type { BuiltResume } from '../shared/resume-builder.js';
 
 export type Records = {
   users: User;
@@ -13,6 +14,7 @@ export type Records = {
   profiles: CareerProfile;
   preparations: PrepSession;
   resumeScans: ResumeScan;
+  resumeDrafts: BuiltResume;
 };
 export interface Store {
   list<K extends keyof Records>(kind: K, filter: Partial<Records[K]>): Promise<Records[K][]>;
@@ -60,6 +62,13 @@ export async function mongoStore(uri: string): Promise<Store> {
   };
   const owned = { ...base, ownerId: { type: String, required: true, index: true } };
   const schemas = {
+    resumeDrafts: new mongoose.Schema({
+      ...owned,
+      input: mongoose.Schema.Types.Mixed,
+      generatedText: String,
+      text: String,
+      previousProfileResumes: [String],
+    }),
     resumeScans: new mongoose.Schema({
       ...owned,
       resume: String,
