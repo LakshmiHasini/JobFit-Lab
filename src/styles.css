@@ -2179,3 +2179,71 @@ main#main-content {
     font-size: 12px;
   }
 }
+
+/* New resumes from user-selected flagship projects and STAR facts. */
+.resume-builder {
+  display: grid;
+  gap: 24px;
+}
+.resume-builder > form {
+  display: grid;
+  gap: 24px;
+}
+.builder-project {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 22px;
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+}
+.builder-project legend {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 8px;
+  color: #735388;
+}
+.resume-builder .studio-panel > pre,
+.resume-builder details pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    12px/1.8 'DM Sans',
+    sans-serif;
+  color: #776581;
+}
+.resume-builder textarea {
+  line-height: 1.8;
+}
+.builder-print {
+  display: none;
+}
+@media (max-width: 680px) {
+  .builder-project {
+    padding: 17px;
+  }
+  .resume-builder .check-label {
+    align-items: flex-start;
+    line-height: 1.8;
+  }
+  .resume-builder .check-label input {
+    margin-top: 4px;
+  }
+}
+@media print {
+  .interview-studio > .resume-builder {
+    display: block !important;
+  }
+  .resume-builder > :not(.builder-print) {
+    display: none !important;
+  }
+  .resume-builder > .builder-print {
+    display: block !important;
+  }
+  .builder-print pre {
+    font: 12pt/1.5 sans-serif;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: black;
+  }
+}

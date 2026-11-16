@@ -69,3 +69,7 @@ Update README after implementation with checks actually run, phase status, and r
 ## Resume score v2 delivery
 
 Implemented a Cake-inspired workflow with an independent six-category JobFit score, prioritized feedback, safe fix preview/apply/undo, direct file input, and owner-scoped saved scan snapshots. Keyword coverage stays separate from the overall score. See docs/RESUME_SCORING.md. AI rewriting and visual layout evaluation remain pending. All 26 tests and the browser score/history/fix workflow passed.
+
+## No-resume creation delivery
+
+Implemented a project-based resume builder with user-selected flagship projects, optional STAR context/outcomes, required personal action descriptions, profile/JD-based ordering, factual confirmation, separate saved drafts, editing, ATS integration, and TXT/print-PDF export. Empty profile resume/GitHub fields are now accepted; manual projects can feed preparation without GitHub import. Explicit profile adoption preserves prior resume text and updates the target role/JD. See docs/RESUME_BUILDER.md. All 32 tests passed; the browser generated and reloaded a separate draft while preserving the existing profile resume.
