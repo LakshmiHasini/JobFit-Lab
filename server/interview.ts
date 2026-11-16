@@ -5,6 +5,7 @@ import type { Store } from './store.js';
 import { analyzeGithub, githubUsername } from './github.js';
 import { buildPreparation, type PrepSession } from '../shared/preparation.js';
 import { skillName } from '../shared/domain.js';
+import { scoreResume } from '../shared/resume-score.js';
 
 const short = z.string().trim().max(200);
 const social = (host: string) =>
@@ -43,6 +44,42 @@ function fail(status: number, message: string): never {
 
 export function interviewRoutes(store: Store, githubAnalyzer = analyzeGithub) {
   const router = Router();
+  router.post('/resume-scans', async (req, res) => {
+    const input = z
+      .object({
+        resume: z.string().trim().min(20).max(30000),
+        jobDescription: z.string().trim().min(20).max(20000),
+      })
+      .parse(req.body);
+    const scan = await store.insert('resumeScans', {
+      ...input,
+      ownerId: req.session.userId!,
+      report: scoreResume(input.resume, input.jobDescription),
+    });
+    res.status(201).json(scan);
+  });
+  router.get('/resume-scans', async (req, res) => {
+    const scans = await store.list('resumeScans', { ownerId: req.session.userId! });
+    res.json(
+      scans
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, 20)
+        .map((s) => ({
+          id: s.id,
+          createdAt: s.createdAt,
+          score: s.report.overallScore,
+          keywordCoverage: s.report.keywordCoverage,
+          version: s.report.version,
+        })),
+    );
+  });
+  router.get('/resume-scans/:id', async (req, res) => {
+    const scan = (
+      await store.list('resumeScans', { id: String(req.params.id), ownerId: req.session.userId! })
+    )[0];
+    if (!scan) fail(404, 'Scan not found');
+    res.json(scan);
+  });
   router.get('/profile', async (req, res) =>
     res.json({
       profile: (await store.list('profiles', { ownerId: req.session.userId! }))[0] ?? null,

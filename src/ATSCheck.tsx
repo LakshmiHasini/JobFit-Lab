@@ -1,6 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle2, Download, FileSearch, RefreshCw } from 'lucide-react';
-import { checkResume, formatAtsReport } from '../shared/ats';
+import {
+  applyResumeFix,
+  scoreResume,
+  formatScoredReport,
+  type ResumeScan,
+  type ScanSummary,
+} from '../shared/resume-score';
+import { readResumeFile } from './lib/resume';
+
+async function scanApi<T>(path: string, body?: unknown): Promise<T> {
+  const response = await fetch('/api/resume-scans' + path, {
+    credentials: 'same-origin',
+    ...(body === undefined
+      ? {}
+      : {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }),
+  });
+  const data = await response
+    .json()
+    .catch(() => ({ error: 'The scan service is unavailable. Please try again.' }));
+  if (!response.ok) throw new Error(data.error ?? 'Unable to save the scan');
+  return data;
+}
 
 export function ATSCheck({
   resume,
@@ -18,14 +43,81 @@ export function ATSCheck({
   const [checked, setChecked] = useState({ resume, job: jobDescription });
   const [report, setReport] = useState(() =>
     resume.trim().length >= 20 && jobDescription.trim().length >= 20
-      ? checkResume(resume, jobDescription)
+      ? scoreResume(resume, jobDescription)
       : null,
   );
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [history, setHistory] = useState<ScanSummary[]>([]);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [undo, setUndo] = useState<string[]>([]);
+  useEffect(() => {
+    scanApi<ScanSummary[]>('')
+      .then(setHistory)
+      .catch(() => setError('Saved scan history is unavailable. Your current text is unchanged.'));
+  }, []);
   const stale = checked.resume !== text || checked.job !== job;
-  const original = originalResume && report ? checkResume(originalResume, checked.job) : null;
+  const original = originalResume && report ? scoreResume(originalResume, checked.job) : null;
+  async function runScan() {
+    setScanning(true);
+    setError('');
+    try {
+      const scan = await scanApi<ResumeScan>('', { resume: text, jobDescription: job });
+      setReport(scan.report);
+      setChecked({ resume: text, job });
+      setHistory((items) =>
+        [
+          {
+            id: scan.id,
+            createdAt: scan.createdAt,
+            score: scan.report.overallScore,
+            keywordCoverage: scan.report.keywordCoverage,
+            version: scan.report.version,
+          },
+          ...items,
+        ].slice(0, 20),
+      );
+      setNotice('Scan complete and saved privately to your account.');
+      setPreview(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setScanning(false);
+    }
+  }
+  async function loadScan(id: string) {
+    setScanning(true);
+    setError('');
+    try {
+      const scan = await scanApi<ResumeScan>('/' + encodeURIComponent(id));
+      setText(scan.resume);
+      setJob(scan.jobDescription);
+      setChecked({ resume: scan.resume, job: scan.jobDescription });
+      setReport(scan.report);
+      setUndo([]);
+      setPreview(null);
+      setNotice('Loaded a saved scan. Your profile and original resume have not changed.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setScanning(false);
+    }
+  }
+  async function upload(file: File | undefined) {
+    if (!file) return;
+    setScanning(true);
+    setError('');
+    try {
+      setText(await readResumeFile(file));
+      setNotice('Resume text loaded. Review the extraction, then run the check.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setScanning(false);
+    }
+  }
   function download(name: string, content: string) {
     const url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
     const a = document.createElement('a');
@@ -40,13 +132,25 @@ export function ATSCheck({
         <div className="studio-section-title">
           <FileSearch size={22} />
           <div>
-            <h2>ATS resume check</h2>
+            <h2>Resume score & improvement studio</h2>
             <p>
-              Compare your resume text with the target job. Each finding includes the reason behind
-              it.
+              Upload your resume and target job. Get an overall score, see what affects it, and
+              preview improvements before applying them.
             </p>
           </div>
         </div>
+        <label className="resume-upload">
+          Upload resume · PDF, TXT, or Markdown · up to 5 MB
+          <input
+            type="file"
+            accept=".pdf,.txt,.md"
+            disabled={scanning}
+            onChange={(e) => {
+              void upload(e.target.files?.[0]);
+              e.target.value = '';
+            }}
+          />
+        </label>
         <div className="form-grid">
           <label>
             Resume text to check
@@ -70,16 +174,11 @@ export function ATSCheck({
         <div className="studio-actions">
           <button
             className="button primary"
-            disabled={text.trim().length < 20 || job.trim().length < 20}
-            onClick={() => {
-              setReport(checkResume(text, job));
-              setChecked({ resume: text, job });
-              setNotice('Check complete. Review the findings below.');
-              setError('');
-            }}
+            disabled={scanning || text.trim().length < 20 || job.trim().length < 20}
+            onClick={() => void runScan()}
           >
             <RefreshCw size={15} />
-            Run ATS check
+            {scanning ? 'Working…' : 'Run ATS check'}
           </button>
           <button
             className="button secondary"
@@ -111,6 +210,18 @@ export function ATSCheck({
               {saving ? 'Saving…' : 'Save to tailored draft'}
             </button>
           )}
+          {undo.length > 0 && (
+            <button
+              className="text-button"
+              onClick={() => {
+                setText(undo[undo.length - 1]);
+                setUndo((items) => items.slice(0, -1));
+                setNotice('Last text fix undone. Rerun the check to update the report.');
+              }}
+            >
+              Undo last fix
+            </button>
+          )}
         </div>
         <p className="form-help">
           Edits here are a separate working copy. They do not change your original profile resume.
@@ -130,6 +241,142 @@ export function ATSCheck({
       </section>
       {report && (
         <>
+          <section className="resume-score-hero" aria-label="JobFit overall resume score">
+            <div
+              className="resume-score-gauge"
+              role="img"
+              aria-label={
+                report.overallScore === null
+                  ? 'Overall score unavailable'
+                  : `JobFit resume score ${report.overallScore} out of 100`
+              }
+            >
+              <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle cx="60" cy="60" r="52" className="score-track" />
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="52"
+                  className="score-value"
+                  pathLength="100"
+                  strokeDasharray={`${report.overallScore ?? 0} 100`}
+                  transform="rotate(-90 60 60)"
+                />
+              </svg>
+              <div>
+                <strong>{report.overallScore ?? '—'}</strong>
+                <span>out of 100</span>
+              </div>
+            </div>
+            <div className="score-headline">
+              <span className="eyebrow">JOBFIT ATS READINESS ESTIMATE</span>
+              <h2>{report.scoreLabel}</h2>
+              <p>
+                A six-category, rule-based resume score. These are JobFit's disclosed weights—not
+                Cake's formula or an employer's screening result.
+              </p>
+              {original?.overallScore !== null && original?.overallScore !== undefined && (
+                <small>
+                  Original resume: {original.overallScore}/100 on the same rubric and job
+                  description.
+                </small>
+              )}
+              {report.overallScore === null && (
+                <small>
+                  Add at least 50 resume words and a job description with a recognized skill to
+                  calculate an overall score.
+                </small>
+              )}
+            </div>
+          </section>
+          <section className="studio-panel">
+            <div className="score-section-heading">
+              <h2>Your score breakdown</h2>
+              <span className="pill">Rubric v2 · weights total 100</span>
+            </div>
+            <div className="score-category-grid">
+              {report.categories.map((category) => (
+                <div key={category.id} className="score-category">
+                  <div>
+                    <h3>{category.name}</h3>
+                    <strong>
+                      {category.earned} / {category.maximum}
+                    </strong>
+                  </div>
+                  <meter
+                    min={0}
+                    max={category.maximum}
+                    value={category.earned}
+                    aria-label={`${category.name}: ${category.earned} out of ${category.maximum}`}
+                  />
+                  <details>
+                    <summary>How this is scored</summary>
+                    <p>{category.explanation}</p>
+                  </details>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="studio-panel">
+            <h2>Improve your next version</h2>
+            <p>
+              Review high-priority content gaps first. Quick fixes only change existing headings,
+              bullet markers, or whitespace; they never add qualifications or metrics.
+            </p>
+            {report.suggestions.map((s) => (
+              <article className="score-suggestion" key={s.id}>
+                <div>
+                  <span className="pill">{s.priority} priority</span>
+                  <h3>{s.title}</h3>
+                  <p>{s.detail}</p>
+                </div>
+                {s.fixId && (
+                  <button className="button secondary" onClick={() => setPreview(s.fixId!)}>
+                    Preview fix
+                  </button>
+                )}
+              </article>
+            ))}
+            {!report.suggestions.length && (
+              <p>
+                No suggestions from this limited rubric. Still review the complete job description
+                and exported file.
+              </p>
+            )}
+            {preview && (
+              <div className="resume-fix-preview">
+                <h3>Preview the text change</h3>
+                <div className="form-grid">
+                  <div>
+                    <h3>Before</h3>
+                    <pre>{text}</pre>
+                  </div>
+                  <div>
+                    <h3>After</h3>
+                    <pre>{applyResumeFix(text, preview)}</pre>
+                  </div>
+                </div>
+                <div className="studio-actions">
+                  <button
+                    className="button primary"
+                    onClick={() => {
+                      setUndo((items) => [...items, text].slice(-10));
+                      setText(applyResumeFix(text, preview));
+                      setPreview(null);
+                      setNotice(
+                        'Fix applied to your working copy. Rerun the scan to update the score and save a new version.',
+                      );
+                    }}
+                  >
+                    Apply to working copy
+                  </button>
+                  <button className="button secondary" onClick={() => setPreview(null)}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
           <div className="ats-summary" aria-label="Resume check results">
             <div>
               <span className="eyebrow">RECOGNIZED JOB-TERM COVERAGE</span>
@@ -227,13 +474,37 @@ export function ATSCheck({
             </p>
             <button
               className="button secondary"
-              onClick={() => download('jobfit-ats-report.txt', formatAtsReport(report))}
+              onClick={() => download('jobfit-ats-report.txt', formatScoredReport(report))}
             >
               <Download size={15} />
               Download ATS check report
             </button>
           </section>
         </>
+      )}
+      {history.length > 0 && (
+        <section className="studio-panel">
+          <h2>Recent scans</h2>
+          <p>
+            Saved report snapshots from your account. Loading a scan changes this working copy only.
+          </p>
+          <div className="scan-history">
+            {history.map((item) => (
+              <button
+                className="scan-history-item"
+                key={item.id}
+                disabled={scanning}
+                onClick={() => void loadScan(item.id)}
+              >
+                <span>{new Date(item.createdAt).toLocaleString()}</span>
+                <strong>{item.score === null ? 'Not scored' : `${item.score}/100`}</strong>
+                <small>
+                  {item.keywordCoverage ?? '—'}% keyword coverage · {item.version}
+                </small>
+              </button>
+            ))}
+          </div>
+        </section>
       )}
     </section>
   );
