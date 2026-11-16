@@ -65,3 +65,7 @@ Public repository: https://github.com/LakshmiHasini/JobFit-Lab. Component branch
 ## Scope and verification tracking
 
 Update README after implementation with checks actually run, phase status, and remaining limitations. Development data and sessions survive restarts in private local storage; MongoDB mode is required for production multiuser use. Do not deploy demo mode publicly.
+
+## Resume score v2 delivery
+
+Implemented a Cake-inspired workflow with an independent six-category JobFit score, prioritized feedback, safe fix preview/apply/undo, direct file input, and owner-scoped saved scan snapshots. Keyword coverage stays separate from the overall score. See docs/RESUME_SCORING.md. AI rewriting and visual layout evaluation remain pending. All 26 tests and the browser score/history/fix workflow passed.

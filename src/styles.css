@@ -1946,3 +1946,236 @@ main#main-content {
     font-size: 28px;
   }
 }
+
+/* Resume scoring and saved report workflow. */
+.resume-score-hero {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  background: #f0ebf8;
+  border: 1px solid #e4dcee;
+  border-radius: 13px;
+  padding: 30px;
+}
+.resume-score-gauge {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  flex-shrink: 0;
+}
+.resume-score-gauge svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.resume-score-gauge circle {
+  fill: none;
+  stroke-width: 8;
+}
+.score-track {
+  stroke: #dfd5ee;
+}
+.score-value {
+  stroke: #7654ac;
+  stroke-linecap: round;
+}
+.resume-score-gauge > div {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.resume-score-gauge strong {
+  font:
+    750 36px Manrope,
+    sans-serif;
+  letter-spacing: -1px;
+  color: #503473;
+}
+.resume-score-gauge span {
+  font-size: 11px;
+  color: #7d6994;
+  margin-top: 3px;
+}
+.score-headline h2 {
+  font-size: 24px;
+  line-height: 1.4;
+  margin: 8px 0 10px;
+}
+.score-headline p {
+  font-size: 12px;
+  line-height: 1.9;
+  max-width: 650px;
+  color: #756285;
+}
+.score-headline small {
+  display: block;
+  font-size: 12px;
+  line-height: 1.8;
+  margin-top: 12px;
+  color: #7b6590;
+}
+.score-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+.score-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 26px;
+}
+.score-category {
+  padding: 18px 0;
+  border-top: 1px solid var(--border);
+  min-width: 0;
+}
+.score-category > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.score-category h3 {
+  font-size: 13px;
+}
+.score-category strong {
+  font-size: 12px;
+  white-space: nowrap;
+  color: #70508f;
+}
+.score-category meter {
+  width: 100%;
+  height: 8px;
+  display: block;
+  margin: 15px 0;
+  appearance: none;
+  border: 0;
+  background: #eee8f4;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.score-category meter::-webkit-meter-bar {
+  background: #eee8f4;
+  border: 0;
+}
+.score-category meter::-webkit-meter-optimum-value {
+  background: #9d7cc2;
+}
+.score-category meter::-moz-meter-bar {
+  background: #9d7cc2;
+}
+.score-category summary {
+  font-size: 11px;
+  color: #8b739e;
+  cursor: pointer;
+}
+.score-category details p {
+  font-size: 12px;
+  line-height: 1.9;
+  margin-top: 12px;
+  color: #796987;
+}
+.score-suggestion {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.score-suggestion h3 {
+  margin: 10px 0;
+  font-size: 14px;
+}
+.score-suggestion p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #7b6d86;
+  max-width: 780px;
+}
+.score-suggestion .button {
+  flex-shrink: 0;
+}
+.resume-fix-preview {
+  display: grid;
+  gap: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.resume-fix-preview pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    12px/1.8 'DM Sans',
+    sans-serif;
+  color: #786584;
+  background: #faf8fc;
+  padding: 16px;
+  border-radius: 8px;
+}
+.resume-fix-preview .form-grid > div {
+  min-width: 0;
+}
+.scan-history {
+  display: grid;
+  gap: 10px;
+}
+.scan-history-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 15px 18px;
+  background: #fff;
+  text-align: left;
+}
+.scan-history-item:hover {
+  background: #f8f5fb;
+}
+.scan-history-item span {
+  font-size: 12px;
+  color: #776780;
+}
+.scan-history-item strong {
+  font-size: 16px;
+  margin-left: auto;
+  color: #644687;
+}
+.scan-history-item small {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: #8e7d9a;
+}
+@media (max-width: 680px) {
+  .resume-score-hero {
+    padding: 22px;
+    gap: 20px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .resume-score-gauge {
+    width: 116px;
+    height: 116px;
+  }
+  .score-headline h2 {
+    font-size: 22px;
+  }
+  .score-category-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .score-suggestion {
+    flex-direction: column;
+    gap: 15px;
+  }
+  .score-headline p {
+    font-size: 12px;
+  }
+}

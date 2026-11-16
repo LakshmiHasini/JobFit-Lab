@@ -45,7 +45,7 @@ export function createApp(options: {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
-  app.use(express.json({ limit: '100kb' }));
+  app.use(express.json({ limit: '256kb' }));
   app.use('/api', (req, res, next) => {
     if (
       ['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) &&
