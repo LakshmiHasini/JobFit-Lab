@@ -30,3 +30,13 @@ Development storage is private under the git-ignored, Vite-denied `.data/` direc
 ## Verification
 
 26 automated tests pass, including score sums/bounds, sparse input handling, dates/phones versus quantified accomplishments, safe fixes, server-side scoring, snapshot preservation, and cross-account isolation. Browser verification covered scan save/load, six category displays, preview/apply/undo, and history after reload. The shared PDF reader still needs a dedicated file/print walkthrough.
+
+## Per-suggestion review
+
+The ATS report now includes a Review suggested changes step. Each suggestion has its priority, reason, exact before/after passage, and a recalculated score/category preview under the same JobFit rubric. Safe normalization previews show only changed lines. A zero delta is labeled as no predicted increase; unavailable scores remain unavailable. These previews are not employer outcomes and are not summed to promise a final increase.
+
+Accept applies only the reviewed change to the working copy; Reject keeps the text intact and allows reconsideration. Content changes require user-written text and explicit factual confirmation, including missing skills, summary/contact additions, and stronger accomplishment wording. Nothing is invented automatically. Additions append a paragraph with a clear location note; the user supplies a heading and may reposition it in the editor. Replacement proposals target a specific scanned passage and are blocked after other edits until rescanned to avoid rewriting the wrong text.
+
+An in-session accepted-change log records exact removed/added passages and score impact. Undo restores the preceding working copy only if no later manual edit would be lost. A new scan resets review decisions; scan snapshots preserve the resulting resume text, not an approval audit trail. Saving to the tailored draft remains a separate explicit action. No profile resume is silently overwritten.
+
+Verification added six regression tests for exact patches, line-only diffs, user-input requirements, stale/repeated text, zero-point changes, and unavailable score previews. Browser verification covered rejection without modification, acceptance and change logging, safe undo, and factual-confirmation gating. All 38 automated tests pass.
