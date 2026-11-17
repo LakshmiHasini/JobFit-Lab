@@ -44,4 +44,8 @@ describe('transparent resume score', () => {
       'Projects\n\n- Built a tool\n\n•\nNext section',
     );
   });
+  it('does not award bullet-quality points for blank markers', () => {
+    const report = scoreResume(resume + '\n• ', 'React required');
+    expect(report.categories.find((c) => c.id === 'impact')!.explanation).toContain('(8/8)');
+  });
 });

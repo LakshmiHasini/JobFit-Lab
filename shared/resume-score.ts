@@ -64,8 +64,8 @@ export function scoreResume(resume: string, jobDescription: string): ScoredRepor
   const report = checkResume(resume, jobDescription);
   const passes = (id: string) => report.checks.some((c) => c.id === id && c.status === 'pass');
   const lines = resume.split('\n');
-  const bulletLines = lines.filter((line) => /^\s*[-*•●▪◦–]\s+/.test(line));
-  const bullets = bulletLines.map((line) => line.replace(/^\s*[-*•●▪◦–]\s+/, ''));
+  const bulletLines = lines.filter((line) => /^[\t ]*[-*•●▪◦–][\t ]+\S/.test(line));
+  const bullets = bulletLines.map((line) => line.replace(/^[\t ]*[-*•●▪◦–][\t ]+/, ''));
   const action =
     /^(?:built|developed|implemented|designed|created|engineered|integrated|tested|optimized|automated|reduced|increased|led|coordinated|delivered|maintained|analyzed|debugged|contributed|improved|migrated|refactored|wrote|deployed|collaborated|resolved|documented|used)\b/i;
   const number =
