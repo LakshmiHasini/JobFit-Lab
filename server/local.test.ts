@@ -8,6 +8,29 @@ import { createApp } from './app';
 import { sampleProfile } from '../shared/preparation.fixture';
 
 describe('local profile and session persistence', () => {
+  it('removes an expired session from disk before reporting it missing', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'jobfit-expired-session-'));
+    try {
+      const first = await localStorage(dir);
+      const expired = { cookie: { expires: new Date(Date.now() - 1000) } } as never;
+      await new Promise<void>((resolve, reject) =>
+        first.sessionStore.set('expired', expired, (error) => (error ? reject(error) : resolve())),
+      );
+      await new Promise<void>((resolve, reject) =>
+        first.sessionStore.get('expired', (error, value) => {
+          if (error) return reject(error);
+          expect(value).toBeNull();
+          resolve();
+        }),
+      );
+      const persisted = JSON.parse(
+        await (await import('node:fs/promises')).readFile(path.join(dir, 'workspace.json'), 'utf8'),
+      );
+      expect(persisted.sessions.expired).toBeUndefined();
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
   it('keeps a saved profile, password login, and cookie session after reinitialization', async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), 'jobfit-persistence-'));
     try {

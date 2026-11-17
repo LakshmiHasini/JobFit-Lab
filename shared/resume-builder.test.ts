@@ -33,4 +33,23 @@ describe('factual project-based resume generation', () => {
     expect(text).not.toMatch(/\d+%|years of experience|increased|improved/);
     expect(text).toContain('Built an item editor and input validation.');
   });
+  it('handles marker-only actions without crashing or losing the result', () => {
+    const input = structuredClone(builderInput);
+    input.projects[0].action = '•\n•\n•\n•\n•\n•';
+    input.projects[0].result = 'Validated the result with users.';
+    expect(buildResume(input)).toContain('- Validated the result with users.');
+  });
+  it('normalizes common action bullet markers without duplicating them', () => {
+    const input = structuredClone(builderInput);
+    input.projects[0].action = '● Built a tool\n▪ Wrote tests\n◦ Reviewed output\n– Deployed it';
+    const text = buildResume(input);
+    expect(text).toContain('- Built a tool\n- Wrote tests\n- Reviewed output\n- Deployed it');
+    expect(text).not.toContain('- ●');
+  });
+  it('preserves existing sentence punctuation when appending a result', () => {
+    const input = structuredClone(builderInput);
+    input.projects[0].action = 'Resolved an outage!';
+    input.projects[0].result = 'Service recovered.';
+    expect(buildResume(input)).toContain('- Resolved an outage! Service recovered.');
+  });
 });

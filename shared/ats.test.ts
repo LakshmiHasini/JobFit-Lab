@@ -45,4 +45,12 @@ describe('explainable ATS text checks', () => {
       checkResume('React', 'React required').keywordCoverage,
     );
   });
+  it('recognizes common bullet markers while ignoring empty bullet lines', () => {
+    const report = checkResume(
+      '● Built a tool\n▪ Wrote tests\n◦ Documented setup\n– Fixed a bug\n• ',
+      'React',
+    );
+    expect(report.bulletCount).toBe(4);
+    expect(report.checks.find((check) => check.id === 'bullets')?.status).toBe('pass');
+  });
 });

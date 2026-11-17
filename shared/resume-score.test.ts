@@ -39,4 +39,13 @@ describe('transparent resume score', () => {
     expect(applyResumeFix(resume, 'unknown')).toBe(resume);
     expect(applyResumeFix('A  \n\n\nB\n', 'spacing')).toBe('A\n\nB\n');
   });
+  it('preserves blank lines and empty bullets when normalizing bullet markers', () => {
+    expect(applyResumeFix('Projects\n\n  • Built a tool\n\n•\nNext section', 'bullets')).toBe(
+      'Projects\n\n- Built a tool\n\n•\nNext section',
+    );
+  });
+  it('does not award bullet-quality points for blank markers', () => {
+    const report = scoreResume(resume + '\n• ', 'React required');
+    expect(report.categories.find((c) => c.id === 'impact')!.explanation).toContain('(8/8)');
+  });
 });

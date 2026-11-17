@@ -98,7 +98,7 @@ export function checkResume(resume: string, jobDescription: string): AtsReport {
     });
   }
   const resumeLines = resume.split('\n');
-  const bullets = resumeLines.filter((line) => /^\s*[-*•]\s+/.test(line));
+  const bullets = resumeLines.filter((line) => /^[\t ]*[-*•●▪◦–][\t ]+\S/.test(line));
   const wordCount = resume.trim() ? resume.trim().split(/\s+/).length : 0;
   const heading = (pattern: RegExp) =>
     resumeLines.some((line) => pattern.test(line.trim().replace(/[:：]$/, '')));

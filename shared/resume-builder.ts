@@ -44,7 +44,7 @@ const section = (title: string, body: string) => (body.trim() ? `${title}\n${bod
 const bullets = (text: string) =>
   text
     .split('\n')
-    .map((line) => line.trim().replace(/^[-*•]\s*/, ''))
+    .map((line) => line.trim().replace(/^[-*•●▪◦–][\t ]*/, ''))
     .filter(Boolean);
 export function buildResume(input: ResumeInput): string {
   // Job language orders existing material; it never becomes a claim about the candidate.
@@ -66,9 +66,12 @@ export function buildResume(input: ResumeInput): string {
   const projectText = projects
     .map(({ project: p }) => {
       const actions = bullets(p.action);
-      if (p.result.trim())
-        actions[actions.length - 1] =
-          `${actions[actions.length - 1].replace(/[.\s]+$/, '')}. ${p.result.trim()}`;
+      if (p.result.trim() && actions.length) {
+        const lastAction = actions[actions.length - 1].trimEnd();
+        const separator = /[.!?]$/.test(lastAction) ? ' ' : '. ';
+        actions[actions.length - 1] = `${lastAction}${separator}${p.result.trim()}`;
+      }
+      else if (p.result.trim()) actions.push(p.result.trim());
       return [
         p.title.trim() + (p.technologies.trim() ? ` | ${p.technologies.trim()}` : ''),
         p.link.trim(),
