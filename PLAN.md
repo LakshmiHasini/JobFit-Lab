@@ -77,3 +77,7 @@ Implemented a project-based resume builder with user-selected flagship projects,
 ## ATS suggestion approval flow
 
 Implemented individual accept/reject controls, exact changed-line previews, reasons, rubric score/category effects, editable truthful content suggestions, factual confirmation, change logging, undo, and stale-replacement protection. Existing resumes are preserved until an explicit draft save. All 38 tests and the browser accept/reject/undo/confirmation checks passed. Approval decisions remain in-session; saved scans retain resume snapshots. No external AI rewriting was introduced.
+
+## Positive-impact review refinement
+
+Implemented measured positive-only ranking, conservative source-based action rewordings requiring factual review, live score gating for user changes, separated cleanup, and working-copy score feedback. Browser verified a 74→75 preview/acceptance and safe undo; all 42 tests pass. No claim is made that these rubric changes predict an employer's ATS result.

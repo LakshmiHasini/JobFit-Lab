@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { scoreResume } from './resume-score';
 import {
   changedPassages,
+  classifyResumeChanges,
   proposeResumeChanges,
   applyReviewedChange,
   previewResumeChange,
@@ -11,6 +12,61 @@ const resume =
   'Documented practical project decisions and verified the changes with peers. '.repeat(8);
 const job = 'Required: React and Java. API testing is preferred.';
 describe('explicit resume change review', () => {
+  it('puts only measured positive edits in the score-increase group', () => {
+    const input = resume + '\n• Worked on React forms for classmates.  ';
+    const changes = proposeResumeChanges(input, scoreResume(input, job), job);
+    const groups = classifyResumeChanges(input, job, changes);
+    expect(groups.increases.length).toBeGreaterThan(0);
+    expect(
+      groups.increases.every(
+        (change) => previewResumeChange(input, input, job, change, change.proposed).delta! > 0,
+      ),
+    ).toBe(true);
+    expect(groups.cleanup.some((change) => change.id === 'spacing')).toBe(true);
+    expect(groups.needsFacts.some((change) => change.id === 'missing')).toBe(true);
+    expect(groups.increases.some((change) => change.id === 'spacing')).toBe(false);
+  });
+  it('proposes factual action rewordings without adding keywords or metrics', () => {
+    const input = resume + '\n• Rapidly learned new tools during the class project.';
+    const changes = proposeResumeChanges(input, scoreResume(input, job), job);
+    const action = changes.find((c) => c.id.startsWith('wording-'))!;
+    expect(action.requiresInput).toBe(true);
+    expect(action.proposed).toBe(
+      '• Developed familiarity with new tools during the class project.',
+    );
+    expect(action.proposed).not.toMatch(/Java|\d/);
+    expect(previewResumeChange(input, input, job, action, action.proposed).delta).toBeGreaterThan(
+      0,
+    );
+  });
+  it('does not classify zero, negative, or unavailable impacts as verified increases', () => {
+    for (const input of ['Candidate  \nReact', resume]) {
+      const changes = proposeResumeChanges(input, scoreResume(input, job), job);
+      const groups = classifyResumeChanges(input, job, changes);
+      expect(
+        groups.increases.every(
+          (c) => previewResumeChange(input, input, job, c, c.proposed).delta! > 0,
+        ),
+      ).toBe(true);
+    }
+  });
+  it('checks user-authored additions against the current score rather than assuming a benefit', () => {
+    const change = proposeResumeChanges(resume, scoreResume(resume, job), job).find(
+      (c) => c.id === 'missing',
+    )!;
+    expect(
+      previewResumeChange(
+        resume,
+        resume,
+        job,
+        change,
+        'Projects\n- Practiced Java collections in coursework.',
+      ).delta,
+    ).toBeGreaterThan(0);
+    expect(previewResumeChange(resume, resume, job, change, 'A short unrelated note.').delta).toBe(
+      0,
+    );
+  });
   it('shows changed lines without obscuring them among untouched text', () => {
     expect(
       changedPassages('OLD HEADING\nUntouched fact\nOLD SKILLS', 'Heading\nUntouched fact\nSkills'),

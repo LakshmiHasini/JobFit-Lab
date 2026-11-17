@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
+  classifyResumeChanges,
   changedPassages,
   proposeResumeChanges,
   previewResumeChange,
   type ResumeChange,
 } from '../shared/resume-changes';
-import type { ScoredReport } from '../shared/resume-score';
+import { scoreResume, type ScoredReport } from '../shared/resume-score';
 
 type Decision = 'accepted' | 'rejected';
 type Accepted = {
@@ -32,73 +33,120 @@ export function ResumeChangeReview({
   report: ScoredReport;
   onChange: (text: string) => void;
 }) {
-  const [changes] = useState(() => proposeResumeChanges(snapshot, report));
+  const [changes] = useState(() => proposeResumeChanges(snapshot, report, job));
+  const groups = classifyResumeChanges(snapshot, job, changes);
   const [decisions, setDecisions] = useState<Record<string, Decision>>({});
   const [log, setLog] = useState<Accepted[]>([]);
   const [notice, setNotice] = useState('');
   const last = log.reduce((found, item, index) => (item.undone ? found : index), -1);
+  const currentScore = scoreResume(text, job).overallScore;
   return (
     <section className="studio-panel resume-change-review">
-      <h2>Review suggested changes</h2>
+      <h2>Changes that increase your JobFit score</h2>
       <p>
         See the exact text, reason, and estimated score effect before deciding. Accept applies only
         that change to this working copy. Reject keeps your text unchanged. Save to your tailored
         draft separately when you are ready.
       </p>
       <p className="form-help">
-        Score effects use the current JobFit rubric, not employer results. Zero-point improvements
-        are labeled honestly. Formatting replacements need a new scan after another edit to avoid
-        changing the wrong passage. Review decisions reset on a new scan; saved scans retain their
-        resume text.
+        Score effects use the current JobFit rubric, not employer results. Only measured positive
+        changes appear in the score-increase group; formatting-only edits are separate. Formatting
+        replacements need a new scan after another edit to avoid changing the wrong passage. Review
+        decisions reset on a new scan; saved scans retain their resume text.
       </p>
       {notice && (
         <p className="studio-notice" role="status">
           {notice}
         </p>
       )}
+      {text !== snapshot && (
+        <p className="studio-notice" role="status">
+          Current working-copy estimate: {currentScore ?? 'Unavailable'} / 100 · last scan:{' '}
+          {scoreResume(snapshot, job).overallScore ?? 'Unavailable'} / 100. Run ATS check to save
+          the updated score.
+        </p>
+      )}
       {!changes.length && (
         <p>No changes are proposed by this report. You can edit the resume and scan again.</p>
       )}
-      {changes.map((change) => (
-        <ChangeCard
-          key={change.id}
-          change={change}
-          snapshot={snapshot}
-          text={text}
-          job={job}
-          decision={decisions[change.id]}
-          onReject={() => {
-            setDecisions((d) => ({ ...d, [change.id]: 'rejected' }));
-            setNotice(`Rejected: ${change.title}. Your resume was not changed.`);
-          }}
-          onReopen={() =>
-            setDecisions((d) => {
-              const next = { ...d };
-              delete next[change.id];
-              return next;
-            })
-          }
-          onAccept={(replacement, preview) => {
-            onChange(preview.after);
-            setDecisions((d) => ({ ...d, [change.id]: 'accepted' }));
-            setLog((items) => [
-              ...items,
-              {
-                id: change.id,
-                title: change.title,
-                before: text,
-                after: preview.after,
-                passageBefore: change.before,
-                passageAfter: replacement,
-                delta: preview.delta,
-                undone: false,
-              },
-            ]);
-            setNotice(
-              `Accepted: ${change.title}. Only your working copy changed. Rescan to save an updated score.`,
-            );
-          }}
-        />
+      {[
+        {
+          id: 'increase',
+          title: 'Verified score increases',
+          items: groups.increases,
+          scoreOnly: true,
+          description:
+            'Ranked by estimated increase. Each proposed edit is rescored against your current resume before acceptance.',
+        },
+        {
+          id: 'facts',
+          title: 'Score opportunities requiring your facts',
+          items: groups.needsFacts,
+          scoreOnly: true,
+          description:
+            'Supply a truthful example or rewrite. Accept is enabled only when your entered wording raises the current JobFit score and you confirm its accuracy.',
+        },
+        {
+          id: 'cleanup',
+          title: 'Optional formatting cleanup · no verified score increase',
+          items: groups.cleanup,
+          scoreOnly: false,
+          description:
+            'These edits may improve consistency, but are not offered as score boosters.',
+        },
+      ].map((group) => (
+        <section className="review-score-group" key={group.id} aria-label={group.title}>
+          <h3>{group.title}</h3>
+          <p className="form-help">{group.description}</p>
+          {group.id === 'increase' && group.items.length === 0 && (
+            <p className="form-help">
+              No automatic score increase was found from supported factual rewordings. Add truthful
+              information below if available; a higher score is not guaranteed.
+            </p>
+          )}
+          {group.items.map((change) => (
+            <ChangeCard
+              scoreOnly={group.scoreOnly}
+              key={change.id}
+              change={change}
+              snapshot={snapshot}
+              text={text}
+              job={job}
+              decision={decisions[change.id]}
+              onReject={() => {
+                setDecisions((d) => ({ ...d, [change.id]: 'rejected' }));
+                setNotice(`Rejected: ${change.title}. Your resume was not changed.`);
+              }}
+              onReopen={() =>
+                setDecisions((d) => {
+                  const next = { ...d };
+                  delete next[change.id];
+                  return next;
+                })
+              }
+              onAccept={(replacement, preview) => {
+                onChange(preview.after);
+                setDecisions((d) => ({ ...d, [change.id]: 'accepted' }));
+                setLog((items) => [
+                  ...items,
+                  {
+                    id: change.id,
+                    title: change.title,
+                    before: text,
+                    after: preview.after,
+                    passageBefore: change.before,
+                    passageAfter: replacement,
+                    delta: preview.delta,
+                    undone: false,
+                  },
+                ]);
+                setNotice(
+                  `Accepted: ${change.title}. Only your working copy changed. Rescan to save an updated score.`,
+                );
+              }}
+            />
+          ))}
+        </section>
       ))}
       {log.length > 0 && (
         <section className="review-change-log">
@@ -154,6 +202,7 @@ export function ResumeChangeReview({
 
 function ChangeCard({
   change,
+  scoreOnly,
   snapshot,
   text,
   job,
@@ -163,6 +212,7 @@ function ChangeCard({
   onReopen,
 }: {
   change: ResumeChange;
+  scoreOnly: boolean;
   snapshot: string;
   text: string;
   job: string;
@@ -181,6 +231,7 @@ function ChangeCard({
     problem = (e as Error).message;
   }
   const changed = preview?.after !== text;
+  const improves = preview?.delta !== null && preview?.delta !== undefined && preview.delta > 0;
   return (
     <article className="review-proposal" aria-label={change.title}>
       <div className="score-section-heading">
@@ -284,6 +335,12 @@ function ChangeCard({
               )
             )}
           </div>
+          {scoreOnly && !problem && !improves && (
+            <p className="form-help">
+              This wording does not currently increase the score. Revise it using truthful details,
+              or reject it. No zero-point or negative edit can be accepted as a score improvement.
+            </p>
+          )}
           {change.requiresInput && (
             <label className="check-label">
               <input
@@ -300,12 +357,13 @@ function ChangeCard({
               disabled={
                 !preview ||
                 !changed ||
+                (scoreOnly && !improves) ||
                 text.length > 30000 ||
                 (preview?.after.length ?? 0) > 30000 ||
                 (change.requiresInput && !confirmed)
               }
               onClick={() => {
-                if (preview) onAccept(replacement, preview);
+                if (preview && (!scoreOnly || improves)) onAccept(replacement, preview);
               }}
             >
               Accept this change

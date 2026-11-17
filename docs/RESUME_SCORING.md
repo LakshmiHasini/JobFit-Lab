@@ -40,3 +40,11 @@ Accept applies only the reviewed change to the working copy; Reject keeps the te
 An in-session accepted-change log records exact removed/added passages and score impact. Undo restores the preceding working copy only if no later manual edit would be lost. A new scan resets review decisions; scan snapshots preserve the resulting resume text, not an approval audit trail. Saving to the tailored draft remains a separate explicit action. No profile resume is silently overwritten.
 
 Verification added six regression tests for exact patches, line-only diffs, user-input requirements, stale/repeated text, zero-point changes, and unavailable score previews. Browser verification covered rejection without modification, acceptance and change logging, safe undo, and factual-confirmation gating. All 38 automated tests pass.
+
+## Positive-impact suggestion ranking
+
+The review flow now separates three groups: verified positive score previews ranked by measured gain, opportunities requiring the user's factual input, and optional cleanup without verified gain. Safe, conservative action-opening rewordings are proposed from existing resume sentences, then rescored before promotion. They still require factual confirmation. No keywords, skills, metrics, or outcomes are added by those rewordings.
+
+Only edits with a positive recalculated overall-score delta can be accepted in the first two groups. User wording is rescored live, so zero/negative/unavailable effects are blocked. Cleanup remains optional and is not presented as increasing the score. Every acceptance checks the current working copy; effects are never summed or promised against stale text. A live working-copy estimate shows the improvement immediately, while the last saved scan stays labeled separately until rescanned. If no supported improvement exists, the app says so rather than fabricating one. This is the same JobFit heuristic rubric, not an employer prediction.
+
+Four additional tests verify positive-only ranking, factual rewordings, unavailable/zero-impact exclusion, and rescored user additions (42 total passing tests). Browser verification demonstrated 74→75 on the sample user's existing action sentence, blocked a zero-point content edit, and restored the original after testing. No profile or tailored resume was overwritten.
