@@ -61,7 +61,10 @@ export async function localStorage(directory: string) {
       const expires = value?.cookie?.expires;
       if (expires && new Date(expires).getTime() <= Date.now()) {
         delete state.sessions[id];
-        callback(null, null);
+        void flush().then(
+          () => callback(null, null),
+          (error) => callback(error),
+        );
         return;
       }
       callback(null, value ? structuredClone(value) : null);
