@@ -44,7 +44,7 @@ const section = (title: string, body: string) => (body.trim() ? `${title}\n${bod
 const bullets = (text: string) =>
   text
     .split('\n')
-    .map((line) => line.trim().replace(/^[-*•]\s*/, ''))
+    .map((line) => line.trim().replace(/^[-*•●▪◦–][\t ]*/, ''))
     .filter(Boolean);
 export function buildResume(input: ResumeInput): string {
   // Job language orders existing material; it never becomes a claim about the candidate.

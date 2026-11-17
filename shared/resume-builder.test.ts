@@ -39,4 +39,11 @@ describe('factual project-based resume generation', () => {
     input.projects[0].result = 'Validated the result with users.';
     expect(buildResume(input)).toContain('- Validated the result with users.');
   });
+  it('normalizes common action bullet markers without duplicating them', () => {
+    const input = structuredClone(builderInput);
+    input.projects[0].action = '● Built a tool\n▪ Wrote tests\n◦ Reviewed output\n– Deployed it';
+    const text = buildResume(input);
+    expect(text).toContain('- Built a tool\n- Wrote tests\n- Reviewed output\n- Deployed it');
+    expect(text).not.toContain('- ●');
+  });
 });
