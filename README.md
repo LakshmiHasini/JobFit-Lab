@@ -100,7 +100,7 @@ Each feature branch is merged into main with a merge commit to preserve its scop
 
 Automated API tests use the memory adapter, not a live MongoDB instance. MongoDB connection, persistent sessions, and deployment behavior require separate integration verification before production. Email verification, password reset, account deletion/export, comprehensive concurrency handling, and assessment history are not yet implemented.
 
-Verified locally: strict TypeScript check, production frontend build, and all 38 domain/API tests passed. Tests cover profile isolation, safe GitHub handles, source-linked analysis, idempotent imports, time budgets, original-resume preservation, and server-side quiz answers/grading. A live API walkthrough imported one public repository with seven signals, generated a seven-day plan, and graded five questions. The initial browser walkthrough covered evidence linking and task completion; the updated profile UI was inspected without changing the user's in-progress form. PDF extraction and the browser print dialog still need a dedicated file/print walkthrough.
+Verified locally: strict TypeScript check, production frontend build, and all 42 domain/API tests passed. Tests cover profile isolation, safe GitHub handles, source-linked analysis, idempotent imports, time budgets, original-resume preservation, and server-side quiz answers/grading. A live API walkthrough imported one public repository with seven signals, generated a seven-day plan, and graded five questions. The initial browser walkthrough covered evidence linking and task completion; the updated profile UI was inspected without changing the user's in-progress form. PDF extraction and the browser print dialog still need a dedicated file/print walkthrough.
 
 ## GitHub Actions setup
 
@@ -131,3 +131,7 @@ The Build new resume tab creates a separate resume from supplied background, con
 ## Accept or reject resume improvements
 
 After the ATS check, review each suggested change with exact before/after text, the reason, and its estimated JobFit score impact. Accept applies that one edit to the working copy; Reject leaves it alone and can be reconsidered. Missing skills/achievements require user-provided factual wording and confirmation. Safe text fixes show only changed lines. Accepted edits are listed with undo; rescan to refresh and save the score, then explicitly save to a tailored draft when ready. Decisions/logs are session-only and reset on a new scan. See [resume scoring details](docs/RESUME_SCORING.md).
+
+### Score-increasing suggestions
+
+The ATS review now ranks measured positive changes first, then offers factual-input opportunities and optional zero-impact cleanup separately. Score-improvement acceptance requires a positive recomputed delta; missing skills or metrics are never invented. The working-copy estimate updates immediately after acceptance, while rescanning saves the new score. See docs/RESUME_SCORING.md for limits and tests.

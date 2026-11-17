@@ -25,8 +25,12 @@ export function changedPassages(before: string, after: string) {
 }
 
 // All offsets refer to a scanned snapshot. Replacements never guess at repeated text.
-export function proposeResumeChanges(resume: string, report: ScoredReport): ResumeChange[] {
-  return report.suggestions.flatMap<ResumeChange>((suggestion) => {
+export function proposeResumeChanges(
+  resume: string,
+  report: ScoredReport,
+  job?: string,
+): ResumeChange[] {
+  const suggestions = report.suggestions.flatMap<ResumeChange>((suggestion) => {
     const base = {
       id: suggestion.id,
       title: suggestion.title,
@@ -83,6 +87,64 @@ export function proposeResumeChanges(resume: string, report: ScoredReport): Resu
       },
     ];
   });
+  if (job) {
+    // Conservative rewordings retain the action/ownership described by the source.
+    // They are never accepted without the user's factual confirmation.
+    const rewrites: [RegExp, string][] = [
+      [/^Worked on\s+/i, 'Contributed to '],
+      [/^Helped build\s+/i, 'Contributed to building '],
+      [/^Responsible for developing\s+/i, 'Developed '],
+      [/^Responsible for implementing\s+/i, 'Implemented '],
+      [/^Rapidly learned\s+/i, 'Developed familiarity with '],
+    ];
+    for (const match of resume.matchAll(/^[ \t]*[-*•●▪◦–][ \t]+.+$/gm)) {
+      const prefix = match[0].match(/^[ \t]*[-*•●▪◦–][ \t]+/)![0];
+      const body = match[0].slice(prefix.length);
+      const rewrite = rewrites.find(([pattern]) => pattern.test(body));
+      if (!rewrite) continue;
+      const candidate: ResumeChange = {
+        id: `wording-${match.index}`,
+        title: 'Clarify an existing action',
+        reason:
+          'Rephrase this supplied contribution with an action-led opening. Review that the new wording preserves your personal role; no skills, outcomes, or numbers are added.',
+        priority: 'medium',
+        before: match[0],
+        proposed: prefix + body.replace(rewrite[0], rewrite[1]),
+        start: match.index!,
+        end: match.index! + match[0].length,
+        kind: 'replace',
+        requiresInput: true,
+      };
+      const preview = previewResumeChange(resume, resume, job, candidate, candidate.proposed);
+      if (preview.delta !== null && preview.delta > 0) suggestions.push(candidate);
+    }
+  }
+  return suggestions;
+}
+
+export function classifyResumeChanges(resume: string, job: string, changes: ResumeChange[]) {
+  const evaluated = changes.map((change) => {
+    try {
+      return {
+        change,
+        delta: previewResumeChange(resume, resume, job, change, change.proposed).delta,
+      };
+    } catch {
+      return { change, delta: null };
+    }
+  });
+  return {
+    increases: evaluated
+      .filter((item) => item.delta !== null && item.delta > 0)
+      .sort((a, b) => b.delta! - a.delta!)
+      .map((item) => item.change),
+    needsFacts: evaluated
+      .filter((item) => item.change.requiresInput && !(item.delta !== null && item.delta > 0))
+      .map((item) => item.change),
+    cleanup: evaluated
+      .filter((item) => !item.change.requiresInput && !(item.delta !== null && item.delta > 0))
+      .map((item) => item.change),
+  };
 }
 
 export function applyReviewedChange(
