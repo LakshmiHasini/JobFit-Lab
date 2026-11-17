@@ -43,7 +43,7 @@ export function applyResumeFix(resume: string, fixId: string) {
       .map((line) => line.trimEnd())
       .join('\n')
       .replace(/\n{3,}/g, '\n\n');
-  if (fixId === 'bullets') return resume.replace(/^\s*[•●▪◦*–]\s+/gm, '- ');
+  if (fixId === 'bullets') return resume.replace(/^[\t ]*[•●▪◦*–][\t ]+/gm, '- ');
   if (fixId === 'headings')
     return resume
       .split('\n')
