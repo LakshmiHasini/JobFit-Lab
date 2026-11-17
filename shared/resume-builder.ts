@@ -66,9 +66,11 @@ export function buildResume(input: ResumeInput): string {
   const projectText = projects
     .map(({ project: p }) => {
       const actions = bullets(p.action);
-      if (p.result.trim() && actions.length)
-        actions[actions.length - 1] =
-          `${actions[actions.length - 1].replace(/[.\s]+$/, '')}. ${p.result.trim()}`;
+      if (p.result.trim() && actions.length) {
+        const lastAction = actions[actions.length - 1].trimEnd();
+        const separator = /[.!?]$/.test(lastAction) ? ' ' : '. ';
+        actions[actions.length - 1] = `${lastAction}${separator}${p.result.trim()}`;
+      }
       else if (p.result.trim()) actions.push(p.result.trim());
       return [
         p.title.trim() + (p.technologies.trim() ? ` | ${p.technologies.trim()}` : ''),

@@ -46,4 +46,10 @@ describe('factual project-based resume generation', () => {
     expect(text).toContain('- Built a tool\n- Wrote tests\n- Reviewed output\n- Deployed it');
     expect(text).not.toContain('- ●');
   });
+  it('preserves existing sentence punctuation when appending a result', () => {
+    const input = structuredClone(builderInput);
+    input.projects[0].action = 'Resolved an outage!';
+    input.projects[0].result = 'Service recovered.';
+    expect(buildResume(input)).toContain('- Resolved an outage! Service recovered.');
+  });
 });
