@@ -33,4 +33,10 @@ describe('factual project-based resume generation', () => {
     expect(text).not.toMatch(/\d+%|years of experience|increased|improved/);
     expect(text).toContain('Built an item editor and input validation.');
   });
+  it('handles marker-only actions without crashing or losing the result', () => {
+    const input = structuredClone(builderInput);
+    input.projects[0].action = '•\n•\n•\n•\n•\n•';
+    input.projects[0].result = 'Validated the result with users.';
+    expect(buildResume(input)).toContain('- Validated the result with users.');
+  });
 });
