@@ -39,4 +39,9 @@ describe('transparent resume score', () => {
     expect(applyResumeFix(resume, 'unknown')).toBe(resume);
     expect(applyResumeFix('A  \n\n\nB\n', 'spacing')).toBe('A\n\nB\n');
   });
+  it('preserves blank lines and empty bullets when normalizing bullet markers', () => {
+    expect(applyResumeFix('Projects\n\n  • Built a tool\n\n•\nNext section', 'bullets')).toBe(
+      'Projects\n\n- Built a tool\n\n•\nNext section',
+    );
+  });
 });
