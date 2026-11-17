@@ -73,3 +73,7 @@ Implemented a Cake-inspired workflow with an independent six-category JobFit sco
 ## No-resume creation delivery
 
 Implemented a project-based resume builder with user-selected flagship projects, optional STAR context/outcomes, required personal action descriptions, profile/JD-based ordering, factual confirmation, separate saved drafts, editing, ATS integration, and TXT/print-PDF export. Empty profile resume/GitHub fields are now accepted; manual projects can feed preparation without GitHub import. Explicit profile adoption preserves prior resume text and updates the target role/JD. See docs/RESUME_BUILDER.md. All 32 tests passed; the browser generated and reloaded a separate draft while preserving the existing profile resume.
+
+## ATS suggestion approval flow
+
+Implemented individual accept/reject controls, exact changed-line previews, reasons, rubric score/category effects, editable truthful content suggestions, factual confirmation, change logging, undo, and stale-replacement protection. Existing resumes are preserved until an explicit draft save. All 38 tests and the browser accept/reject/undo/confirmation checks passed. Approval decisions remain in-session; saved scans retain resume snapshots. No external AI rewriting was introduced.

@@ -2247,3 +2247,76 @@ main#main-content {
     color: black;
   }
 }
+
+/* Explicit per-suggestion review and change tracking. */
+.resume-change-review .review-proposal {
+  display: grid;
+  gap: 17px;
+  border-top: 1px solid var(--border);
+  padding: 22px 0;
+  min-width: 0;
+}
+.review-proposal > p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #786783;
+}
+.review-proposal pre,
+.review-change-log pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    12px/1.8 'DM Sans',
+    sans-serif;
+  background: #f8f5fb;
+  padding: 14px;
+  border-radius: 6px;
+  min-height: 60px;
+}
+.review-proposal .form-grid > div,
+.review-change-log .form-grid > div {
+  min-width: 0;
+}
+.review-proposal h3 {
+  font-size: 13px;
+}
+.review-proposal label {
+  margin-top: 10px;
+  line-height: 1.7;
+}
+.review-proposal textarea {
+  width: 100%;
+  line-height: 1.8;
+}
+.review-proposal .check-label {
+  flex-direction: row;
+  align-items: flex-start;
+}
+.change-score-impact {
+  background: #f3f0f8;
+  padding: 14px 16px;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.change-score-impact ul {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+.change-score-impact > p {
+  margin-top: 7px;
+}
+.review-change-log {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  display: grid;
+  gap: 17px;
+}
+.review-change-log summary {
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.review-change-log details > div {
+  margin-top: 15px;
+}

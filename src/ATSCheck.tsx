@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Download, FileSearch, RefreshCw } from 'lucide-react';
 import {
-  applyResumeFix,
   scoreResume,
   formatScoredReport,
   type ResumeScan,
   type ScanSummary,
 } from '../shared/resume-score';
 import { readResumeFile } from './lib/resume';
+import { ResumeChangeReview } from './ResumeChangeReview';
 
 async function scanApi<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch('/api/resume-scans' + path, {
@@ -51,8 +51,7 @@ export function ATSCheck({
   const [error, setError] = useState('');
   const [scanning, setScanning] = useState(false);
   const [history, setHistory] = useState<ScanSummary[]>([]);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [undo, setUndo] = useState<string[]>([]);
+  const [reviewEpoch, setReviewEpoch] = useState(0);
   useEffect(() => {
     scanApi<ScanSummary[]>('')
       .then(setHistory)
@@ -80,7 +79,7 @@ export function ATSCheck({
         ].slice(0, 20),
       );
       setNotice('Scan complete and saved privately to your account.');
-      setPreview(null);
+      setReviewEpoch((value) => value + 1);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -96,8 +95,7 @@ export function ATSCheck({
       setJob(scan.jobDescription);
       setChecked({ resume: scan.resume, job: scan.jobDescription });
       setReport(scan.report);
-      setUndo([]);
-      setPreview(null);
+      setReviewEpoch((value) => value + 1);
       setNotice('Loaded a saved scan. Your profile and original resume have not changed.');
     } catch (e) {
       setError((e as Error).message);
@@ -210,18 +208,6 @@ export function ATSCheck({
               {saving ? 'Saving…' : 'Save to tailored draft'}
             </button>
           )}
-          {undo.length > 0 && (
-            <button
-              className="text-button"
-              onClick={() => {
-                setText(undo[undo.length - 1]);
-                setUndo((items) => items.slice(0, -1));
-                setNotice('Last text fix undone. Rerun the check to update the report.');
-              }}
-            >
-              Undo last fix
-            </button>
-          )}
         </div>
         <p className="form-help">
           Edits here are a separate working copy. They do not change your original profile resume.
@@ -317,66 +303,25 @@ export function ATSCheck({
               ))}
             </div>
           </section>
-          <section className="studio-panel">
-            <h2>Improve your next version</h2>
-            <p>
-              Review high-priority content gaps first. Quick fixes only change existing headings,
-              bullet markers, or whitespace; they never add qualifications or metrics.
+          {checked.job === job ? (
+            <ResumeChangeReview
+              key={reviewEpoch}
+              snapshot={checked.resume}
+              text={text}
+              job={checked.job}
+              report={report}
+              onChange={(next) => {
+                setText(next);
+                setNotice(
+                  'Your reviewed change is in the working copy. Rescan to save the updated score.',
+                );
+              }}
+            />
+          ) : (
+            <p className="studio-notice" role="status">
+              The job description changed. Run a new ATS check before reviewing suggestions.
             </p>
-            {report.suggestions.map((s) => (
-              <article className="score-suggestion" key={s.id}>
-                <div>
-                  <span className="pill">{s.priority} priority</span>
-                  <h3>{s.title}</h3>
-                  <p>{s.detail}</p>
-                </div>
-                {s.fixId && (
-                  <button className="button secondary" onClick={() => setPreview(s.fixId!)}>
-                    Preview fix
-                  </button>
-                )}
-              </article>
-            ))}
-            {!report.suggestions.length && (
-              <p>
-                No suggestions from this limited rubric. Still review the complete job description
-                and exported file.
-              </p>
-            )}
-            {preview && (
-              <div className="resume-fix-preview">
-                <h3>Preview the text change</h3>
-                <div className="form-grid">
-                  <div>
-                    <h3>Before</h3>
-                    <pre>{text}</pre>
-                  </div>
-                  <div>
-                    <h3>After</h3>
-                    <pre>{applyResumeFix(text, preview)}</pre>
-                  </div>
-                </div>
-                <div className="studio-actions">
-                  <button
-                    className="button primary"
-                    onClick={() => {
-                      setUndo((items) => [...items, text].slice(-10));
-                      setText(applyResumeFix(text, preview));
-                      setPreview(null);
-                      setNotice(
-                        'Fix applied to your working copy. Rerun the scan to update the score and save a new version.',
-                      );
-                    }}
-                  >
-                    Apply to working copy
-                  </button>
-                  <button className="button secondary" onClick={() => setPreview(null)}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
+          )}
           <div className="ats-summary" aria-label="Resume check results">
             <div>
               <span className="eyebrow">RECOGNIZED JOB-TERM COVERAGE</span>
