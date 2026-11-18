@@ -78,6 +78,66 @@ describe('workspace API', () => {
     expect(workspace.projects).toHaveLength(0);
     expect(workspace.evidence).toHaveLength(0);
   });
+  it('supports localhost and 127.0.0.1 sign-in with persistent session cookies in development', async () => {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/register').set('Origin', origin).send(credentials).expect(201);
+    await agent.post('/api/auth/logout').set('Origin', origin).send({}).expect(200);
+    await agent
+      .post('/api/auth/login')
+      .set('Origin', 'http://localhost:5173')
+      .send(credentials)
+      .expect(200);
+    expect((await agent.get('/api/session')).body.user.email).toBe(credentials.email);
+    await agent
+      .post('/api/auth/logout')
+      .set('Origin', 'http://localhost:5173')
+      .send({})
+      .expect(200);
+    await agent.post('/api/auth/login').set('Origin', origin).send(credentials).expect(200);
+
+    const reverse = createApp({
+      store: memoryStore(),
+      demo: true,
+      secret: 'test-session-secret-at-least-32-characters',
+      origin: 'http://localhost:5173',
+    });
+    await request(reverse)
+      .post('/api/auth/register')
+      .set('Origin', origin)
+      .send(credentials)
+      .expect(201);
+  });
+  it('rejects other local ports, protocols and lookalike hosts, and keeps production origins exact', async () => {
+    for (const untrusted of [
+      'http://localhost:5174',
+      'https://localhost:5173',
+      'http://localhost.example:5173',
+      'null',
+    ]) {
+      await request(app)
+        .post('/api/auth/login')
+        .set('Origin', untrusted)
+        .send(credentials)
+        .expect(403);
+    }
+    const production = createApp({
+      store: memoryStore(),
+      demo: false,
+      production: true,
+      secret: 'test-session-secret-at-least-32-characters',
+      origin,
+    });
+    await request(production)
+      .post('/api/auth/login')
+      .set('Origin', 'http://localhost:5173')
+      .send(credentials)
+      .expect(403);
+    await request(production)
+      .post('/api/auth/login')
+      .set('Origin', origin)
+      .send(credentials)
+      .expect(401);
+  });
   it('requires review before task creation and task completion never creates evidence', async () => {
     const agent = request.agent(app);
     await agent.post('/api/auth/demo').send({}).expect(200);
