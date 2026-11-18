@@ -42,6 +42,16 @@ export function createApp(options: {
   githubAnalyzer?: typeof analyzeGithub;
 }) {
   const { store, demo } = options;
+  const trustedOrigins = new Set(options.origin ? [options.origin] : []);
+  // Vite is reachable through either loopback name. Trust only the configured
+  // protocol and port, and retain an exact origin match in production.
+  if (!options.production && options.origin) {
+    const localOrigin = new URL(options.origin);
+    if (['localhost', '127.0.0.1'].includes(localOrigin.hostname)) {
+      localOrigin.hostname = localOrigin.hostname === 'localhost' ? '127.0.0.1' : 'localhost';
+      trustedOrigins.add(localOrigin.origin);
+    }
+  }
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
@@ -50,7 +60,7 @@ export function createApp(options: {
     if (
       ['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) &&
       req.headers.origin &&
-      req.headers.origin !== options.origin
+      !trustedOrigins.has(req.headers.origin)
     ) {
       res.status(403).json({ error: 'Untrusted request origin' });
       return;
