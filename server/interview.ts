@@ -34,8 +34,8 @@ const profileSchema = z.object({
   background: z.string().max(5000),
   codingContext: z.string().max(3000),
   resume: z.string().max(30000).default(''),
-  targetRole: short.min(1),
-  jobDescription: z.string().min(20).max(20000),
+  targetRole: short,
+  jobDescription: z.string().trim().max(20000),
   days: z.number().int().min(1).max(60),
   hoursPerDay: z.number().min(1).max(8),
 });
@@ -178,6 +178,8 @@ export function interviewRoutes(store: Store, githubAnalyzer = analyzeGithub) {
   router.post('/preparations', async (req, res) => {
     const profile = (await store.list('profiles', { ownerId: req.session.userId! }))[0];
     if (!profile) fail(400, 'Complete your profile first.');
+    if (!profile.targetRole.trim() || profile.jobDescription.trim().length < 20)
+      fail(400, 'Add a target role and job description in Preparation plan before generating.');
     if (profile.resume.trim().length < 20)
       fail(
         400,

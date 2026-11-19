@@ -8,7 +8,7 @@ Build a profile-first interview preparation workspace: professional/coding profi
 
 The user expanded the original evidence tracker into an end-to-end interview preparation product. The sections below retain the original delivery history; the new primary workflow is:
 
-1. **Complete profile — implemented:** GitHub, LinkedIn, LeetCode, GFG, resume PDF/text input, background, experience, role/JD, and preparation time.
+1. **My profile — implemented:** default page after sign-in with GitHub, LinkedIn, LeetCode, GFG, resume PDF/text input, background, and experience. Other tools are available in the sidebar; job targeting and preparation time are entered on the Preparation plan page. Profiles can be saved without job details.
 2. **Analyze GitHub — implemented baseline:** latest five eligible public repositories, linked manifest/tree/language signals, repeat-import deduplication, and warnings. Deep code understanding, contribution attribution, private repos, and exhaustive repository analysis remain.
 3. **Generate preparation — implemented baseline:** saved input snapshots, role-topic mapping, gap-first daily activities, strict daily time budgets, and downloadable plans. The current mapping is a curated set of 12 skills, not semantic full-JD understanding.
 4. **Tailor resume — implemented baseline:** ATS-oriented local text checking now adds explainable keyword coverage, source excerpts, text structure checks, original/draft comparison, and TXT report export. Actual document-layout parsing and employer-specific ATS evaluation remain outside this check. original preserved, relevant contiguous bullets reprioritized, editable/saved draft, TXT export, and browser print/PDF. Semantic AI rewriting, template-preserving document export, and OCR remain.
