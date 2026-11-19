@@ -28,6 +28,38 @@ type QuizResult = {
   reviewTopics: string[];
   results: { questionId: string; correct: boolean; correctChoice: number; explanation: string }[];
 };
+export type StudioPage =
+  'profile' | 'github' | 'builder' | 'preparation' | 'resume' | 'ats' | 'practice';
+const pageDetails: Record<StudioPage, { title: string; description: string }> = {
+  profile: {
+    title: 'My profile',
+    description: 'Your experience, professional links, and current resume, together in one place.',
+  },
+  github: {
+    title: 'GitHub analysis',
+    description: 'Connect your public projects to the skills you can demonstrate.',
+  },
+  builder: {
+    title: 'Build a resume',
+    description: 'Create a resume from your profile, project contributions, and target job.',
+  },
+  preparation: {
+    title: 'Preparation plan',
+    description: 'Choose your target role and timeline, then build a plan around your experience.',
+  },
+  resume: {
+    title: 'Tailor my resume',
+    description: 'Review a role-specific draft and keep every change grounded in your experience.',
+  },
+  ats: {
+    title: 'ATS resume check',
+    description: 'Check your resume against a job description and review score-improving edits.',
+  },
+  practice: {
+    title: 'Interview practice',
+    description: 'Practice questions, quizzes, and coding exercises for your target role.',
+  },
+};
 async function request<T>(path: string, body?: unknown, method = 'POST'): Promise<T> {
   let response: Response;
   try {
@@ -73,11 +105,15 @@ export function InterviewStudio({
   onImported,
   userId,
   onAuthenticated,
+  page: tab,
+  onNavigate: setTab,
 }: {
   name: string;
   onImported: () => Promise<void>;
   userId: string;
   onAuthenticated: (person: { id: string; name: string; email: string }) => Promise<void>;
+  page: StudioPage;
+  onNavigate: (page: StudioPage) => void;
 }) {
   const draftKey = 'jobfit-profile-draft:' + userId;
   const [profile, setProfile] = useState<CareerProfile>(() => {
@@ -91,7 +127,6 @@ export function InterviewStudio({
   const [createAccount, setCreateAccount] = useState(false);
   const [sessions, setSessions] = useState<SafePrep[]>([]);
   const [selected, setSelected] = useState('');
-  const [tab, setTab] = useState('profile');
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -159,7 +194,7 @@ export function InterviewStudio({
       setProfile(saved);
       setDirty(false);
       sessionStorage.removeItem(draftKey);
-      setNotice('Profile saved. Build a new resume, or continue preparing with your current one.');
+      setNotice('Profile saved. Choose a tool from the sidebar when you’re ready.');
     });
   }
   async function recoverSession(e: FormEvent<HTMLFormElement>) {
@@ -193,10 +228,14 @@ export function InterviewStudio({
   }
   async function generate() {
     await run('Building your preparation workspace', async () => {
+      const saved = await request<CareerProfile>('/profile', profile, 'PUT');
+      setProfile(saved);
+      setDirty(false);
+      sessionStorage.removeItem(draftKey);
       const prep = await request<SafePrep>('/preparations', {});
       setSessions((s) => [prep, ...s]);
       setSelected(prep.id);
-      setTab('plan');
+      setTab('preparation');
       setNotice('Your role-specific preparation workspace is ready.');
     });
   }
@@ -227,34 +266,10 @@ export function InterviewStudio({
     <section className="interview-studio">
       <div className="page-heading">
         <div>
-          <div className="eyebrow">ONE PROFILE. YOUR WHOLE PREPARATION.</div>
-          <h1>From your projects to your next offer.</h1>
-          <p>Bring your experience together. Prepare for the role you actually want.</p>
+          <div className="eyebrow">YOUR CAREER WORKSPACE</div>
+          <h1>{pageDetails[tab].title}</h1>
+          <p>{pageDetails[tab].description}</p>
         </div>
-        <span className="pill lavender">
-          <Sparkles size={13} />
-          Structured guidance · no AI model connected
-        </span>
-      </div>
-      <div className="studio-tabs" aria-label="Interview preparation sections">
-        {[
-          ['profile', '01', 'Complete profile'],
-          ['builder', '02', 'Build new resume'],
-          ['plan', '03', 'Preparation plan'],
-          ['resume', '04', 'Tailor resume'],
-          ['ats', '05', 'ATS check'],
-          ['practice', '06', 'Interview practice'],
-        ].map(([id, n, label]) => (
-          <button
-            key={id}
-            className={tab === id ? 'selected' : ''}
-            onClick={() => setTab(id)}
-            aria-pressed={tab === id}
-          >
-            <small>{n}</small>
-            {label}
-          </button>
-        ))}
       </div>
       {authRequired && (
         <section className="studio-panel" aria-label="Restore sign-in">
@@ -454,13 +469,9 @@ export function InterviewStudio({
                 <FileText size={20} />
                 <div>
                   <h2>Your current resume (optional)</h2>
-                  <p>Upload one if you have it, or build a new resume from your projects.</p>
+                  <p>Upload your current resume or paste its text to include it in your profile.</p>
                 </div>
               </div>
-              <button className="button secondary" type="button" onClick={() => setTab('builder')}>
-                I need a new resume
-                <ArrowRight size={16} />
-              </button>
               <label className="resume-upload">
                 Upload PDF, TXT, or Markdown · up to 5 MB
                 <input
@@ -484,72 +495,28 @@ export function InterviewStudio({
                 />
               </label>
             </section>
-            <section className="studio-panel">
-              <div className="studio-section-title">
-                <Sparkles size={20} />
-                <div>
-                  <h2>Your target and timeline</h2>
-                  <p>Use a real job description for role-specific preparation.</p>
-                </div>
-              </div>
-              <div className="form-grid">
-                <label>
-                  Target role
-                  <input
-                    required
-                    maxLength={200}
-                    placeholder="e.g. Junior MERN developer"
-                    value={profile.targetRole}
-                    onChange={(e) => update('targetRole', e.target.value)}
-                  />
-                </label>
-                <label>
-                  Days to prepare
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    max={60}
-                    value={profile.days}
-                    onChange={(e) => update('days', Number(e.target.value))}
-                  />
-                </label>
-                <label>
-                  Hours available each day
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    max={8}
-                    step={0.5}
-                    value={profile.hoursPerDay}
-                    onChange={(e) => update('hoursPerDay', Number(e.target.value))}
-                  />
-                </label>
-              </div>
-              <label>
-                Job description
-                <textarea
-                  required
-                  minLength={20}
-                  maxLength={20000}
-                  rows={6}
-                  placeholder="Paste the role responsibilities, required skills, and preferred qualifications."
-                  value={profile.jobDescription}
-                  onChange={(e) => update('jobDescription', e.target.value)}
-                />
-              </label>
-            </section>
             <div className="studio-actions">
               <button className="button primary" disabled={Boolean(busy)} type="submit">
                 {dirty ? 'Save profile' : 'Save profile'}
                 <ArrowRight size={16} />
               </button>
               <span className="form-help">
-                Save first, then import projects and build your plan below.
+                Your tools are in the sidebar whenever you’re ready.
               </span>
             </div>
           </form>
+        </>
+      )}
+      {tab === 'github' && (
+        <>
+          {(!profile.id || !profile.github || dirty) && (
+            <div className="studio-notice">
+              <p>Add your GitHub username and save your profile before importing projects.</p>
+              <button className="text-button" onClick={() => setTab('profile')}>
+                Open my profile
+              </button>
+            </div>
+          )}
           <section className="studio-panel github-section">
             <div className="studio-section-title">
               <Github size={21} />
@@ -572,17 +539,9 @@ export function InterviewStudio({
                   ? 'Refresh GitHub analysis'
                   : 'Import & analyze projects'}
               </button>
-              <button
-                className="button primary"
-                disabled={Boolean(busy) || dirty || profile.resume.trim().length < 20}
-                onClick={() => void generate()}
-              >
-                Build my preparation workspace
-                <ArrowRight size={16} />
-              </button>
             </div>
             {dirty && (
-              <p className="form-help">Save your profile changes before importing or generating.</p>
+              <p className="form-help">Save your changes in My profile before importing.</p>
             )}
             <div className="repository-grid">
               {profile.repositories.map((repo) => (
@@ -622,21 +581,107 @@ export function InterviewStudio({
           </section>
         </>
       )}
-      {tab !== 'profile' && tab !== 'ats' && tab !== 'builder' && !active && (
+      {tab === 'preparation' && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void generate();
+          }}
+        >
+          <section className="studio-panel">
+            <div className="studio-section-title">
+              <Sparkles size={20} />
+              <div>
+                <h2>Your target and timeline</h2>
+                <p>Use a real job description for role-specific preparation.</p>
+              </div>
+            </div>
+            <div className="form-grid">
+              <label>
+                Target role
+                <input
+                  required
+                  maxLength={200}
+                  placeholder="e.g. Junior MERN developer"
+                  value={profile.targetRole}
+                  onChange={(e) => update('targetRole', e.target.value)}
+                />
+              </label>
+              <label>
+                Days to prepare
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  max={60}
+                  value={profile.days}
+                  onChange={(e) => update('days', Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Hours available each day
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  max={8}
+                  step={0.5}
+                  value={profile.hoursPerDay}
+                  onChange={(e) => update('hoursPerDay', Number(e.target.value))}
+                />
+              </label>
+            </div>
+            <label>
+              Job description
+              <textarea
+                required
+                minLength={20}
+                maxLength={20000}
+                rows={6}
+                placeholder="Paste the role responsibilities, required skills, and preferred qualifications."
+                value={profile.jobDescription}
+                onChange={(e) => update('jobDescription', e.target.value)}
+              />
+            </label>
+          </section>
+
+          {(!profile.id || profile.resume.trim().length < 20) && (
+            <div className="studio-notice">
+              <p>Save your profile and add a resume before building a plan.</p>
+              <button className="text-button" type="button" onClick={() => setTab('profile')}>
+                Open my profile
+              </button>
+            </div>
+          )}
+          <div className="studio-actions">
+            <button
+              className="button primary"
+              type="submit"
+              disabled={Boolean(busy) || !profile.id || profile.resume.trim().length < 20}
+            >
+              {active ? 'Build a new preparation plan' : 'Build my preparation plan'}
+            </button>
+            <span className="form-help">
+              Your target and timeline are saved when you build a plan.
+            </span>
+          </div>
+        </form>
+      )}
+      {(tab === 'resume' || tab === 'practice') && !active && (
         <div className="empty-state">
           <Sparkles size={27} />
-          <h2>Start with your complete profile.</h2>
+          <h2>Build your preparation plan first.</h2>
           <p>
             Add your target role and timeline. Build a resume or upload one, then generate a
             preparation workspace.
           </p>
-          <button className="button primary" onClick={() => setTab('profile')}>
-            Complete my profile
+          <button className="button primary" onClick={() => setTab('preparation')}>
+            Open preparation plan
             <ArrowRight size={16} />
           </button>
         </div>
       )}
-      {tab !== 'profile' && tab !== 'ats' && tab !== 'builder' && active && (
+      {(tab === 'preparation' || tab === 'resume' || tab === 'practice') && active && (
         <>
           <div className="prep-selector">
             <label>
@@ -654,7 +699,7 @@ export function InterviewStudio({
               hours/day
             </span>
           </div>
-          {tab === 'plan' && (
+          {tab === 'preparation' && (
             <>
               <div className="studio-panel">
                 <h2>Your role-specific route</h2>

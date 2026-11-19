@@ -20,6 +20,37 @@ const repositories = [
   },
 ];
 describe('private interview studio', () => {
+  it('saves a profile without a target job and requires job details only when building a plan', async () => {
+    const app = createApp({
+      store: memoryStore(),
+      demo: true,
+      secret: 'a-long-test-secret-value',
+      githubAnalyzer: async () => repositories,
+    });
+    const agent = request.agent(app);
+    await agent
+      .post('/api/auth/register')
+      .send({ name: 'Candidate', email: 'profile@example.test', password: 'safe-test-password' })
+      .expect(201);
+    const profile = { ...sampleProfile, targetRole: '', jobDescription: '' };
+    await agent.put('/api/profile').send(profile).expect(201);
+    expect((await agent.get('/api/profile')).body.profile.fullName).toBe(sampleProfile.fullName);
+    await agent.post('/api/github/import').send({ count: 1 }).expect(200);
+    const missingRole = await agent.post('/api/preparations').send({}).expect(400);
+    expect(missingRole.body.error).toContain('target role and job description');
+    await agent
+      .put('/api/profile')
+      .send({ ...profile, targetRole: sampleProfile.targetRole })
+      .expect(200);
+    await agent.post('/api/preparations').send({}).expect(400);
+    await agent
+      .put('/api/profile')
+      .send({ ...profile, jobDescription: 'Too short' })
+      .expect(200);
+    await agent.post('/api/preparations').send({}).expect(400);
+    await agent.put('/api/profile').send(sampleProfile).expect(200);
+    await agent.post('/api/preparations').send({}).expect(201);
+  });
   it('persists a full profile, imports idempotently, and keeps quiz answers on the server', async () => {
     const app = createApp({
       store: memoryStore(),

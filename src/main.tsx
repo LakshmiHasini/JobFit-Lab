@@ -14,12 +14,19 @@ import {
   ExternalLink,
   FlaskConical,
   FolderOpen,
+  FilePlus2,
+  FileSearch,
+  FilePenLine,
+  Github,
   LayoutDashboard,
   LogOut,
+  Menu,
+  MessagesSquare,
   Plus,
   Search,
   Sparkles,
   Target,
+  UserRound,
   X,
 } from 'lucide-react';
 import {
@@ -31,10 +38,13 @@ import {
   type Workspace,
 } from '../shared/domain';
 import './styles.css';
-import { InterviewStudio } from './InterviewStudio';
+import { InterviewStudio, type StudioPage } from './InterviewStudio';
 
 type Person = { id: string; name: string; email: string };
-type Page = 'studio' | 'overview' | 'projects' | 'roles' | 'plan';
+type Page = StudioPage | 'overview' | 'projects' | 'roles' | 'tasks';
+function isStudioPage(page: Page): page is StudioPage {
+  return !['overview', 'projects', 'roles', 'tasks'].includes(page);
+}
 type ModalState =
   | { type: 'project' }
   | { type: 'evidence'; projectId: string }
@@ -57,7 +67,8 @@ function App() {
   const [demo, setDemo] = useState(false);
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<Workspace>(empty);
-  const [page, setPage] = useState<Page>('studio');
+  const [page, setPage] = useState<Page>('profile');
+  const [navOpen, setNavOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
   const [modal, setModal] = useState<ModalState | null>(null);
   const [error, setError] = useState('');
@@ -77,6 +88,7 @@ function App() {
   }, []);
   async function authenticated(person: Person) {
     await refresh();
+    if (user?.id !== person.id) setPage('profile');
     setUser(person);
     setError('');
   }
@@ -103,6 +115,11 @@ function App() {
     setSelectedRole(id);
     setPage('roles');
   };
+  const navigate = (next: Page) => {
+    setPage(next);
+    setNavOpen(false);
+    window.scrollTo(0, 0);
+  };
   if (!ready)
     return (
       <div className="loading">
@@ -112,38 +129,55 @@ function App() {
     );
   if (!user) return <Auth demo={demo} onAuthenticated={authenticated} initialError={error} />;
   const pages: { id: Page; label: string; icon: typeof Target }[] = [
-    { id: 'studio', label: 'Interview studio', icon: Sparkles },
+    { id: 'profile', label: 'My profile', icon: UserRound },
+    { id: 'github', label: 'GitHub analysis', icon: Github },
+    { id: 'builder', label: 'Build a resume', icon: FilePlus2 },
+    { id: 'preparation', label: 'Preparation plan', icon: ClipboardList },
+    { id: 'resume', label: 'Tailor my resume', icon: FilePenLine },
+    { id: 'ats', label: 'ATS resume check', icon: FileSearch },
+    { id: 'practice', label: 'Interview practice', icon: MessagesSquare },
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'projects', label: 'Project evidence', icon: FolderOpen },
     { id: 'roles', label: 'Target roles', icon: Target },
-    { id: 'plan', label: 'Preparation plan', icon: ClipboardList },
+    { id: 'tasks', label: 'Preparation tasks', icon: CheckCircle2 },
   ];
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <a
-          className="brand"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            setPage('overview');
-          }}
-        >
-          <span className="brand-mark">
-            <FlaskConical size={23} />
-          </span>
-          <span>
-            JobFit<span className="brand-light"> Lab</span>
-            <small>YOUR NEXT CHAPTER</small>
-          </span>
-        </a>
+      <aside className={`sidebar ${navOpen ? 'nav-open' : ''}`}>
+        <div className="sidebar-header">
+          <a
+            className="brand"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('profile');
+            }}
+          >
+            <span className="brand-mark">
+              <FlaskConical size={23} />
+            </span>
+            <span>
+              JobFit<span className="brand-light"> Lab</span>
+              <small>YOUR NEXT CHAPTER</small>
+            </span>
+          </a>
+          <button
+            className="icon-button nav-toggle"
+            aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={navOpen}
+            aria-controls="workspace-navigation"
+            onClick={() => setNavOpen((open) => !open)}
+          >
+            {navOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
         <div className="workspace-label">WORKSPACE</div>
-        <nav aria-label="Workspace navigation">
+        <nav id="workspace-navigation" aria-label="Workspace navigation">
           {pages.map((p) => (
             <button
               key={p.id}
-              className={`nav-item ${page === p.id ? 'active' : ''}`}
-              onClick={() => setPage(p.id)}
+              className={`nav-item ${page === p.id ? 'active' : ''} ${p.id === 'overview' ? 'nav-group-start' : ''}`}
+              onClick={() => navigate(p.id)}
               aria-current={page === p.id ? 'page' : undefined}
             >
               <p.icon size={19} />
@@ -152,16 +186,6 @@ function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-note">
-          <span className="mini-icon">
-            <BookOpen size={18} />
-          </span>
-          <strong>Build the evidence.</strong>
-          <p>Every project is a step toward your next opportunity.</p>
-          <button className="text-button" onClick={() => setPage('projects')}>
-            Explore your projects <ArrowRight size={14} />
-          </button>
-        </div>
         <div className="profile">
           <span className="avatar">
             {user.name
@@ -226,14 +250,17 @@ function App() {
               </button>
             </div>
           )}
-          {page === 'studio' && (
+          <div hidden={!isStudioPage(page)}>
             <InterviewStudio
+              key={user.id}
+              page={isStudioPage(page) ? page : 'profile'}
+              onNavigate={navigate}
               name={user.name}
               userId={user.id}
               onAuthenticated={authenticated}
               onImported={refresh}
             />
-          )}
+          </div>
           {page === 'overview' && (
             <>
               <div className="page-heading">
@@ -350,7 +377,7 @@ function App() {
                   <SectionHeading
                     title="Your next steps"
                     action="View plan"
-                    onClick={() => setPage('plan')}
+                    onClick={() => setPage('tasks')}
                   />
                   {openTasks.length ? (
                     <div className="task-list">
@@ -536,11 +563,11 @@ function App() {
               )}
             </>
           )}
-          {page === 'plan' && (
+          {page === 'tasks' && (
             <>
               <PageHeading
                 eyebrow="SMALL STEPS, REAL PROGRESS"
-                title="Your preparation plan"
+                title="Your preparation tasks"
                 description="Turn uncovered requirements into practical work with clear completion criteria."
               />
               {data.tasks.length ? (

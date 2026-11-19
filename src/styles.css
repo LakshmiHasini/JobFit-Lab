@@ -150,6 +150,15 @@ form {
 .sidebar .brand {
   margin: 0 10px;
 }
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.sidebar .nav-toggle {
+  display: none;
+}
 .brand-mark {
   width: 38px;
   height: 40px;
@@ -175,12 +184,16 @@ form {
   font-size: 10px;
   letter-spacing: 1.6px;
   color: #92929e;
-  margin: 47px 14px 15px;
+  margin: 28px 14px 15px;
   font-weight: 600;
 }
 .sidebar nav {
   display: grid;
-  gap: 7px;
+  gap: 4px;
+  align-content: start;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .nav-item {
   display: flex;
@@ -188,12 +201,19 @@ form {
   align-items: center;
   border: 0;
   background: transparent;
-  padding: 13px 14px;
+  padding: 11px 12px;
   border-radius: 8px;
   text-align: left;
-  font-size: 13px;
+  font-size: 0.875rem;
   color: #717381;
   font-weight: 500;
+}
+.nav-item svg {
+  flex-shrink: 0;
+}
+.nav-group-start {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
 }
 .nav-item.active {
   background: #f0ebfa;
@@ -247,6 +267,8 @@ form {
   gap: 10px;
   padding: 20px 6px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  margin-top: 16px;
 }
 .avatar {
   width: 35px;
@@ -1255,7 +1277,7 @@ main#main-content {
   .sidebar {
     position: static;
     width: 100%;
-    padding: 18px 18px 0;
+    padding: 18px;
     border-right: 0;
     border-bottom: 1px solid var(--border);
   }
@@ -1278,22 +1300,29 @@ main#main-content {
     display: none;
   }
   .sidebar nav {
+    display: none;
+  }
+  .sidebar .nav-toggle {
+    display: inline-flex;
+  }
+  .sidebar.nav-open nav {
+    display: grid;
+    max-height: 60vh;
+    margin-top: 18px;
+    overflow-y: auto;
+  }
+  .sidebar.nav-open .profile {
     display: flex;
-    gap: 2px;
-    margin-top: 20px;
-    justify-content: space-between;
-    overflow-x: auto;
   }
   .nav-item {
-    font-size: 10px;
-    gap: 6px;
-    padding: 12px 8px;
-    white-space: nowrap;
-    border-radius: 5px 5px 0 0;
+    font-size: 0.875rem;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
   }
   .nav-item svg {
-    width: 15px;
-    height: 15px;
+    width: 19px;
+    height: 19px;
   }
   .nav-count {
     display: none;
