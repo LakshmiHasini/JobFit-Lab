@@ -1,3 +1,4 @@
+import { api } from './lib/api';
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -51,17 +52,7 @@ type ModalState =
   | { type: 'role' }
   | { type: 'task'; role: Role; requirement: Requirement };
 const empty: Workspace = { projects: [], evidence: [], roles: [], tasks: [] };
-async function api<T>(path: string, body?: unknown, method = 'POST'): Promise<T> {
-  const response = await fetch(`/api${path}`, {
-    credentials: 'same-origin',
-    ...(body === undefined
-      ? {}
-      : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-  });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || 'Request failed');
-  return result;
-}
+
 function App() {
   const [user, setUser] = useState<Person | null>(null);
   const [demo, setDemo] = useState(false);
