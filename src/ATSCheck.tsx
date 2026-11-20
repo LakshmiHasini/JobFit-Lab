@@ -1,3 +1,4 @@
+import { api } from './lib/api';
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Download, FileSearch, RefreshCw } from 'lucide-react';
 import {
@@ -9,22 +10,8 @@ import {
 import { readResumeFile } from './lib/resume';
 import { ResumeChangeReview } from './ResumeChangeReview';
 
-async function scanApi<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch('/api/resume-scans' + path, {
-    credentials: 'same-origin',
-    ...(body === undefined
-      ? {}
-      : {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        }),
-  });
-  const data = await response
-    .json()
-    .catch(() => ({ error: 'The scan service is unavailable. Please try again.' }));
-  if (!response.ok) throw new Error(data.error ?? 'Unable to save the scan');
-  return data;
+function scanApi<T>(path: string, body?: unknown): Promise<T> {
+  return api<T>('/resume-scans' + path, body);
 }
 
 export function ATSCheck({
@@ -137,6 +124,36 @@ export function ATSCheck({
             </p>
           </div>
         </div>
+        {(resume !== text || jobDescription !== job) && (
+          <div className="studio-notice">
+            <p>
+              Keep your working copy, or replace it with the latest resume and job details from the
+              source.
+            </p>
+            <button
+              type="button"
+              className="button secondary"
+              disabled={scanning || saving}
+              onClick={() => {
+                setText(resume);
+                setJob(jobDescription);
+                setChecked({ resume, job: jobDescription });
+                setReport(
+                  resume.trim().length >= 20 && jobDescription.trim().length >= 20
+                    ? scoreResume(resume, jobDescription)
+                    : null,
+                );
+                setReviewEpoch((value) => value + 1);
+                setError('');
+                setNotice(
+                  'Loaded the latest source text into this working copy. Run the check to save a scan.',
+                );
+              }}
+            >
+              Use latest source text
+            </button>
+          </div>
+        )}
         <label className="resume-upload">
           Upload resume · PDF, TXT, or Markdown · up to 5 MB
           <input

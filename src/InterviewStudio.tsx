@@ -1,3 +1,4 @@
+import { api as request } from './lib/api';
 import { useEffect, useState, type FormEvent } from 'react';
 import {
   ArrowRight,
@@ -18,6 +19,7 @@ import { codingExercises } from '../shared/preparation';
 import { ATSCheck } from './ATSCheck';
 import { readResumeFile } from './lib/resume';
 import { ResumeBuilder } from './ResumeBuilder';
+import { KeepOpen } from './KeepOpen';
 
 type SafePrep = Omit<PrepSession, 'questions'> & {
   questions: Omit<Question, 'correct' | 'explanation'>[];
@@ -60,25 +62,7 @@ const pageDetails: Record<StudioPage, { title: string; description: string }> = 
     description: 'Practice questions, quizzes, and coding exercises for your target role.',
   },
 };
-async function request<T>(path: string, body?: unknown, method = 'POST'): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch('/api' + path, {
-      credentials: 'same-origin',
-      ...(body === undefined
-        ? {}
-        : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-    });
-  } catch {
-    throw new Error('Cannot connect to JobFit Lab. Check that the app is running and try again.');
-  }
-  const data = await response
-    .json()
-    .catch(() => ({ error: 'The service is unavailable. Please try again.' }));
-  if (!response.ok)
-    throw Object.assign(new Error(data.error ?? 'Request failed'), { status: response.status });
-  return data;
-}
+
 const initial = (name: string): CareerProfile => ({
   id: '',
   ownerId: '',
@@ -328,8 +312,9 @@ export function InterviewStudio({
           {busy}…
         </div>
       )}
-      {tab === 'ats' && (
+      <KeepOpen active={tab === 'ats'}>
         <ATSCheck
+          key={active?.id ?? 'profile'}
           resume={active ? draft : profile.resume}
           jobDescription={active?.jobDescription ?? profile.jobDescription}
           originalResume={active?.originalResume}
@@ -347,8 +332,8 @@ export function InterviewStudio({
               : undefined
           }
         />
-      )}
-      {tab === 'builder' && (
+      </KeepOpen>
+      <KeepOpen active={tab === 'builder'}>
         <ResumeBuilder
           userId={userId}
           profile={profile}
@@ -358,7 +343,7 @@ export function InterviewStudio({
             sessionStorage.removeItem(draftKey);
           }}
         />
-      )}
+      </KeepOpen>
       {tab === 'profile' && (
         <>
           <form onSubmit={save} className="profile-form">

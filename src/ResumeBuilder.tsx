@@ -1,9 +1,11 @@
+import { api as call } from './lib/api';
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowRight, Download, Plus, Printer, Save, Trash2 } from 'lucide-react';
 import type { CareerProfile } from '../shared/preparation';
 import type { Project } from '../shared/domain';
 import type { BuiltResume, ProjectStory, ResumeInput } from '../shared/resume-builder';
 import { ATSCheck } from './ATSCheck';
+import { KeepOpen } from './KeepOpen';
 
 const blankProject = (): ProjectStory => ({
   sourceProjectId: '',
@@ -16,17 +18,7 @@ const blankProject = (): ProjectStory => ({
   featured: false,
   link: '',
 });
-async function call<T>(path: string, body?: unknown, method = 'POST'): Promise<T> {
-  const response = await fetch('/api' + path, {
-    credentials: 'same-origin',
-    ...(body === undefined
-      ? {}
-      : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-  });
-  const data = await response.json().catch(() => ({ error: 'The resume service is unavailable.' }));
-  if (!response.ok) throw new Error(data.error ?? 'Request failed');
-  return data;
-}
+
 export function ResumeBuilder({
   profile,
   onUse,
@@ -564,16 +556,18 @@ export function ResumeBuilder({
           </section>
         </>
       )}
-      {active && view === 'ats' && (
-        <ATSCheck
-          key={active.id}
-          resume={text}
-          jobDescription={active.input.jobDescription}
-          originalResume={active.generatedText}
-          onApply={async (value) => {
-            await saveText(value);
-          }}
-        />
+      {active && (
+        <KeepOpen key={active.id} active={view === 'ats'}>
+          <ATSCheck
+            key={active.id}
+            resume={text}
+            jobDescription={active.input.jobDescription}
+            originalResume={active.generatedText}
+            onApply={async (value) => {
+              await saveText(value);
+            }}
+          />
+        </KeepOpen>
       )}
       {active && (
         <div className="builder-print">
