@@ -136,11 +136,14 @@ export function createApp(options: {
       .object({
         email: z.email().transform((v) => v.toLowerCase()),
         password: z.string().min(1).max(128),
+        expectedUserId: z.uuid().optional(),
       })
       .parse(req.body);
     const user = (await store.list('users', { email: input.email }))[0];
     if (!user || !verifyPassword(input.password, user.passwordHash))
       fail(401, 'Email or password is incorrect');
+    if (input.expectedUserId && input.expectedUserId !== user.id)
+      fail(409, 'Sign in with the account that opened this workspace to save its draft.');
     await establish(req, user.id);
     res.json({ id: user.id, name: user.name, email: user.email });
   });
@@ -303,7 +306,7 @@ export function createApp(options: {
       if (status >= 500) console.error(err);
       res.status(status).json({
         error:
-          status === 409
+          error.code === 11000
             ? 'This record already exists'
             : status >= 500
               ? 'Something went wrong. Please try again.'
