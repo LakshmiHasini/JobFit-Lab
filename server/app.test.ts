@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from './app';
 import { memoryStore } from './store';
+import { sampleProfile } from '../shared/preparation.fixture';
 
 const origin = 'http://127.0.0.1:5173';
 const credentials = {
@@ -20,6 +21,51 @@ describe('workspace API', () => {
   let app: ReturnType<typeof setup>;
   beforeEach(() => {
     app = setup();
+  });
+  it('keeps actionable conflict messages when an account already exists', async () => {
+    await request(app).post('/api/auth/register').send(credentials).expect(201);
+    const duplicate = await request(app).post('/api/auth/register').send(credentials).expect(409);
+    expect(duplicate.body.error).toBe('An account with this email already exists');
+  });
+  it('recovers only the original account session before an existing profile draft can be saved', async () => {
+    const original = request.agent(app);
+    const other = request.agent(app);
+    const registered = await original.post('/api/auth/register').send(credentials).expect(201);
+    await original.put('/api/profile').send(sampleProfile).expect(201);
+    const otherCredentials = { ...credentials, email: 'other-recovery@example.com' };
+    const second = await other.post('/api/auth/register').send(otherCredentials).expect(201);
+    await other
+      .put('/api/profile')
+      .send({ ...sampleProfile, resume: 'Other account resume remains unchanged.' })
+      .expect(201);
+    await original.post('/api/auth/logout').send({}).expect(200);
+
+    const rejected = await original
+      .post('/api/auth/login')
+      .send({ ...otherCredentials, expectedUserId: registered.body.id })
+      .expect(409);
+    expect(rejected.body.error).toContain('account that opened this workspace');
+    expect((await original.get('/api/session')).body.user).toBeNull();
+    await original
+      .put('/api/profile')
+      .send({ ...sampleProfile, resume: 'Unsaved original account draft' })
+      .expect(401);
+    expect((await other.get('/api/profile')).body.profile.resume).toBe(
+      'Other account resume remains unchanged.',
+    );
+
+    await original
+      .post('/api/auth/login')
+      .send({ ...credentials, expectedUserId: registered.body.id })
+      .expect(200);
+    await original
+      .put('/api/profile')
+      .send({ ...sampleProfile, resume: 'Recovered original account draft' })
+      .expect(200);
+    const saved = (await original.get('/api/profile')).body.profile;
+    expect(saved.ownerId).toBe(registered.body.id);
+    expect(saved.ownerId).not.toBe(second.body.id);
+    expect(saved.resume).toBe('Recovered original account draft');
   });
   it('protects workspace access and supports account lifecycle', async () => {
     await request(app).get('/api/workspace').expect(401);

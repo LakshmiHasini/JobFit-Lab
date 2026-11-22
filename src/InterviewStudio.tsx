@@ -20,6 +20,7 @@ import { ATSCheck } from './ATSCheck';
 import { readResumeFile } from './lib/resume';
 import { ResumeBuilder } from './ResumeBuilder';
 import { KeepOpen } from './KeepOpen';
+import { readProfileDraft, writeProfileDraft, clearProfileDraft } from './lib/profile-draft';
 
 type SafePrep = Omit<PrepSession, 'questions'> & {
   questions: Omit<Question, 'correct' | 'explanation'>[];
@@ -99,45 +100,48 @@ export function InterviewStudio({
   page: StudioPage;
   onNavigate: (page: StudioPage) => void;
 }) {
-  const draftKey = 'jobfit-profile-draft:' + userId;
-  const [profile, setProfile] = useState<CareerProfile>(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem(draftKey) || 'null') || initial(name);
-    } catch {
-      return initial(name);
-    }
-  });
+  const [restoredDraft] = useState(() => readProfileDraft(userId));
+  const [profile, setProfile] = useState<CareerProfile>(() => restoredDraft ?? initial(name));
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
-  const [createAccount, setCreateAccount] = useState(false);
   const [sessions, setSessions] = useState<SafePrep[]>([]);
   const [selected, setSelected] = useState('');
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [dirty, setDirty] = useState(false);
+  const [dirty, setDirty] = useState(Boolean(restoredDraft));
   const [draft, setDraft] = useState('');
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<QuizResult | null>(null);
   const [practiceNotes, setPracticeNotes] = useState<Record<number, string>>({});
   const active = sessions.find((s) => s.id === selected) ?? sessions[0];
   useEffect(() => {
-    Promise.all([
-      request<{ profile: CareerProfile | null }>('/profile'),
-      request<SafePrep[]>('/preparations'),
-    ])
-      .then(([p, s]) => {
-        if (sessionStorage.getItem(draftKey)) {
-          setDirty(true);
-          setNotice('Restored your unsaved profile draft from this tab.');
-        } else if (p.profile) setProfile(p.profile);
-        setSessions(s.reverse());
+    let cancelled = false;
+    const failed = (error: Error & { status?: number }) => {
+      if (cancelled) return;
+      setError(error.message);
+      if (error.status === 401) setAuthRequired(true);
+    };
+    const loadProfile = request<{ profile: CareerProfile | null }>('/profile')
+      .then(({ profile: saved }) => {
+        if (cancelled) return;
+        if (restoredDraft) setNotice('Restored your unsaved profile draft from this tab.');
+        else if (saved) setProfile(saved);
+        setProfileLoaded(true);
       })
-      .catch((e) => {
-        setError(e.message);
-        if (e.status === 401) setAuthRequired(true);
+      .catch(failed);
+    const loadPreparations = request<SafePrep[]>('/preparations')
+      .then((saved) => {
+        if (!cancelled) setSessions(saved.reverse());
       })
-      .finally(() => setReady(true));
+      .catch(failed);
+    void Promise.all([loadProfile, loadPreparations]).finally(() => {
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
   useEffect(() => {
     setDraft(active?.draftResume ?? '');
@@ -147,13 +151,9 @@ export function InterviewStudio({
   }, [active?.id]);
   useEffect(() => {
     if (ready && dirty) {
-      try {
-        sessionStorage.setItem(draftKey, JSON.stringify(profile));
-      } catch {
-        /* Keep the current form if browser storage is unavailable. */
-      }
+      writeProfileDraft(userId, profile);
     }
-  }, [profile, dirty, ready, draftKey]);
+  }, [profile, dirty, ready, userId]);
   async function run(label: string, fn: () => Promise<void>) {
     setBusy(label);
     setError('');
@@ -173,11 +173,12 @@ export function InterviewStudio({
   }
   async function save(e: FormEvent) {
     e.preventDefault();
+    if (!profileLoaded) return;
     await run('Saving profile', async () => {
       const saved = await request<CareerProfile>('/profile', profile, 'PUT');
       setProfile(saved);
       setDirty(false);
-      sessionStorage.removeItem(draftKey);
+      clearProfileDraft(userId);
       setNotice('Profile saved. Choose a tool from the sidebar when you’re ready.');
     });
   }
@@ -185,17 +186,28 @@ export function InterviewStudio({
     e.preventDefault();
     const values = Object.fromEntries(new FormData(e.currentTarget));
     await run('Restoring sign-in and saving profile', async () => {
-      const person = await request<{ id: string; name: string; email: string }>(
-        createAccount ? '/auth/register' : '/auth/login',
-        { ...values, ...(createAccount ? { name: profile.fullName } : {}) },
-      );
+      const person = await request<{ id: string; name: string; email: string }>('/auth/login', {
+        ...values,
+        expectedUserId: userId,
+      });
       await onAuthenticated(person);
       setAuthRequired(false);
+      // If the first load failed and there is no valid restored draft, fetch the
+      // saved profile instead of replacing it with an empty initial form.
+      if (!profileLoaded && !restoredDraft) {
+        const { profile: saved } = await request<{ profile: CareerProfile | null }>('/profile');
+        setProfile(saved ?? initial(name));
+        setProfileLoaded(true);
+        setDirty(false);
+        clearProfileDraft(userId);
+        setNotice('Signed in. Your saved profile is ready.');
+        return;
+      }
       const saved = await request<CareerProfile>('/profile', profile, 'PUT');
       setProfile(saved);
+      setProfileLoaded(true);
       setDirty(false);
-      sessionStorage.removeItem(draftKey);
-      sessionStorage.removeItem('jobfit-profile-draft:' + person.id);
+      clearProfileDraft(userId);
       setNotice('Signed in and profile saved. Your form entries have been kept.');
     });
   }
@@ -211,11 +223,12 @@ export function InterviewStudio({
     });
   }
   async function generate() {
+    if (!profileLoaded) return;
     await run('Building your preparation workspace', async () => {
       const saved = await request<CareerProfile>('/profile', profile, 'PUT');
       setProfile(saved);
       setDirty(false);
-      sessionStorage.removeItem(draftKey);
+      clearProfileDraft(userId);
       const prep = await request<SafePrep>('/preparations', {});
       setSessions((s) => [prep, ...s]);
       setSelected(prep.id);
@@ -246,6 +259,21 @@ export function InterviewStudio({
         <p>Loading your interview workspace…</p>
       </div>
     );
+  if (!profileLoaded && !authRequired)
+    return (
+      <section className="studio-panel" aria-label="Profile unavailable">
+        <h1>Your profile is temporarily unavailable</h1>
+        <p>
+          Reload your workspace before making changes so your saved information stays protected.
+        </p>
+        <p className="error" role="alert">
+          {error}
+        </p>
+        <button className="button primary" onClick={() => window.location.reload()}>
+          Reload workspace
+        </button>
+      </section>
+    );
   return (
     <section className="interview-studio">
       <div className="page-heading">
@@ -259,8 +287,8 @@ export function InterviewStudio({
         <section className="studio-panel" aria-label="Restore sign-in">
           <h2>Sign in to save your profile</h2>
           <p>
-            Your session expired. Your draft stays on this page. If you used the earlier temporary
-            demo, you may need to create your account again.
+            Your session expired. Sign in with the same account to save this draft. Your form
+            entries stay on this page while you sign in.
           </p>
           <form onSubmit={recoverSession}>
             <div className="form-grid">
@@ -274,22 +302,15 @@ export function InterviewStudio({
                   name="password"
                   type="password"
                   required
-                  minLength={createAccount ? 10 : 1}
+                  minLength={1}
                   maxLength={128}
-                  autoComplete={createAccount ? 'new-password' : 'current-password'}
+                  autoComplete="current-password"
                 />
               </label>
             </div>
             <div className="studio-actions">
               <button className="button primary" disabled={Boolean(busy)}>
-                {createAccount ? 'Create account and save profile' : 'Sign in and save profile'}
-              </button>
-              <button
-                className="text-button"
-                type="button"
-                onClick={() => setCreateAccount((v) => !v)}
-              >
-                {createAccount ? 'Use an existing account' : 'Create an account instead'}
+                Sign in and save profile
               </button>
             </div>
           </form>
@@ -340,7 +361,7 @@ export function InterviewStudio({
           onUse={(saved) => {
             setProfile(saved);
             setDirty(false);
-            sessionStorage.removeItem(draftKey);
+            clearProfileDraft(userId);
           }}
         />
       </KeepOpen>
@@ -481,12 +502,18 @@ export function InterviewStudio({
               </label>
             </section>
             <div className="studio-actions">
-              <button className="button primary" disabled={Boolean(busy)} type="submit">
+              <button
+                className="button primary"
+                disabled={Boolean(busy) || !profileLoaded}
+                type="submit"
+              >
                 {dirty ? 'Save profile' : 'Save profile'}
                 <ArrowRight size={16} />
               </button>
               <span className="form-help">
-                Your tools are in the sidebar whenever you’re ready.
+                {profileLoaded
+                  ? 'Your tools are in the sidebar whenever you’re ready.'
+                  : 'Your saved profile could not be loaded. Reload before saving to protect your existing information.'}
               </span>
             </div>
           </form>
@@ -642,7 +669,9 @@ export function InterviewStudio({
             <button
               className="button primary"
               type="submit"
-              disabled={Boolean(busy) || !profile.id || profile.resume.trim().length < 20}
+              disabled={
+                Boolean(busy) || !profileLoaded || !profile.id || profile.resume.trim().length < 20
+              }
             >
               {active ? 'Build a new preparation plan' : 'Build my preparation plan'}
             </button>
