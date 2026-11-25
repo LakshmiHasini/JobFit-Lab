@@ -7,6 +7,7 @@ import type { BuiltResume, ProjectStory, ResumeInput } from '../shared/resume-bu
 import { ATSCheck } from './ATSCheck';
 import { KeepOpen } from './KeepOpen';
 
+
 const blankProject = (): ProjectStory => ({
   sourceProjectId: '',
   title: '',
